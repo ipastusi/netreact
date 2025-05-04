@@ -1,0 +1,24 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "quarterly"
+    groups:
+      general:
+        applies-to: "version-updates"
+        patterns: [ "*" ]
+      security:
+        applies-to: "security-updates"
+        patterns: [ "*" ]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "quarterly"
+    groups:
+      actions-general:
+        applies-to: "version-updates"
+        patterns: [ "*" ]
+      actions-security:
+        applies-to: "security-updates"
+        patterns: [ "*" ]
