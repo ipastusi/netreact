@@ -63,6 +63,11 @@ func main() {
 	packetSource := gopacket.NewPacketSource(pcapHandle, pcapHandle.LinkType())
 	for packet := range packetSource.Packets() {
 		arpLayer := packet.Layer(layers.LayerTypeARP)
+		if arpLayer == nil {
+			// if you are using a custom BPF filter and this is not an ARP packet
+			continue
+		}
+
 		arp := arpLayer.(*layers.ARP)
 		if !slices.Equal(arp.SourceHwAddress, localMac) {
 			arpEvent := ArpEvent{
