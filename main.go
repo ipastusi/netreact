@@ -49,7 +49,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = pcapHandle.SetBPFFilter("arp")
+	err = pcapHandle.SetBPFFilter(flags.filter)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

@@ -23,7 +23,7 @@ func Test_processArpEvents(t *testing.T) {
 			}
 		}
 
-		files, err := filepath.Glob("testdir/netreact*.json")
+		files, err := filepath.Glob("events/netreact*.json")
 		if err != nil {
 			t.Fatal("error getting matching files:", err)
 		}
@@ -40,7 +40,7 @@ func Test_processArpEvents(t *testing.T) {
 		t.Fatal("error getting pwd:", err)
 	}
 
-	eventDir := filepath.Join(pwd, "testdir")
+	eventDir := filepath.Join(pwd, "events")
 	h := newArpEventHandler(nil, getLogHandler(t), eventDir)
 	cache := newCache()
 
@@ -96,7 +96,7 @@ func Test_processArpEvents(t *testing.T) {
 		}
 
 		// event file checks
-		eventFileName := fmt.Sprintf("testdir/netreact-%v.json", e.arpEvent.ts)
+		eventFileName := fmt.Sprintf("events/netreact-%v.json", e.arpEvent.ts)
 		eventFileBytes, err := os.ReadFile(eventFileName)
 		if err != nil {
 			t.Fatal("error reading event file:", err)

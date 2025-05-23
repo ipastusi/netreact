@@ -11,6 +11,7 @@ import (
 
 type CliFlags struct {
 	ifaceName   string
+	filter      string
 	logFileName string
 	promiscMode bool
 	eventDir    string
@@ -18,15 +19,17 @@ type CliFlags struct {
 }
 
 func getCliFlags() (CliFlags, error) {
+	eventDir := flag.String("d", "", "directory where to store the event files, relative to the working directory, if provided (default working directory)")
+	filter := flag.String("f", "arp", "custom BPF filter, e.g. \"arp and src host not 0.0.0.0\"")
 	ifaceName := flag.String("i", "", "interface name, e.g. eth0")
 	logFileName := flag.String("l", "netreact.log", "log file")
 	promisc := flag.Bool("p", true, "put the interface in promiscuous mode")
-	eventDir := flag.String("d", "", "directory where to store the event files, relative to the working directory, if provided (defaults to the working directory)")
 	ui := flag.Bool("u", true, "display textual user interface")
 
 	flag.Parse()
 	flags := CliFlags{
 		ifaceName:   *ifaceName,
+		filter:      *filter,
 		logFileName: *logFileName,
 		promiscMode: *promisc,
 		eventDir:    *eventDir,
