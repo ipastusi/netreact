@@ -80,7 +80,7 @@ Examples:
 Event files offer you the ability to trigger custom responses to detected ARP events. You can implement arbitrary event file detection
 mechanism and response logic.
 
-On Linux you migth want to use `inotifywait` to detect event file creation:
+On Linux you might want to use `inotifywait` to detect event file creation:
 
 ```
 ./netreact -i eth0 -d events
@@ -91,7 +91,7 @@ events/netreact-1747995770270.json
 events/netreact-1747995770292.json
 ```
 
-On macOS you migth want to use `fswatch`:
+On macOS you might want to use `fswatch`:
 
 ```
 ./netreact -i en0 -d events
