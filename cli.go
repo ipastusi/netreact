@@ -23,7 +23,7 @@ func getCliFlags() (CliFlags, error) {
 	filter := flag.String("f", "arp", "custom BPF filter, e.g. \"arp and src host not 0.0.0.0\"")
 	ifaceName := flag.String("i", "", "interface name, e.g. eth0")
 	logFileName := flag.String("l", "netreact.log", "log file")
-	promisc := flag.Bool("p", true, "put the interface in promiscuous mode")
+	promisc := flag.Bool("p", false, "put the interface in promiscuous mode")
 	ui := flag.Bool("u", true, "display textual user interface")
 
 	flag.Parse()

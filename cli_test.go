@@ -14,7 +14,7 @@ func Test_processCliFlags(t *testing.T) {
 		ok    bool
 	}{
 		{"default values", CliFlags{ifaceName: validIface.Name}, true},
-		{"custom values", CliFlags{ifaceName: validIface.Name, logFileName: "arp.log", promiscMode: false, eventDir: "events", uiEnabled: false, filter: "arp and src host not 0.0.0.0"}, true},
+		{"custom values", CliFlags{ifaceName: validIface.Name, logFileName: "arp.log", promiscMode: true, eventDir: "events", uiEnabled: false, filter: "arp and src host not 0.0.0.0"}, true},
 		{"nonexistent event dir", CliFlags{ifaceName: validIface.Name, eventDir: "nonexistent"}, false},
 		{"missing iface", CliFlags{ifaceName: "", promiscMode: false}, false},
 		{"invalid iface", CliFlags{ifaceName: "eth99", promiscMode: false}, false},
