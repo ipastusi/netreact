@@ -1,6 +1,6 @@
 # Netreact
 
-Passive ARP scanner.
+Passive ARP scanner with built-in support for generating event notifications.
 
 [![Go](https://github.com/ipastusi/netreact/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/ipastusi/netreact/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/ipastusi/netreact/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/ipastusi/netreact/actions/workflows/codeql-analysis.yml)
