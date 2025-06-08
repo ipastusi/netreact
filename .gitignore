@@ -1,4 +1,5 @@
 .idea/
+oui_scripts/
 *.json
 *.log
 netreact

@@ -24,10 +24,11 @@ Sample event file:
 {
   "eventType": "ARP_PACKET_RECEIVED",
   "ip": "192.168.8.100",
-  "mac": "02:ff:76:2d:1c:8a",
-  "firstTs": 1747999250473,
-  "ts": 1747999251996,
-  "count": 4
+  "mac": "f8:4e:73:2d:1c:8a",
+  "firstTs": 1749464243156,
+  "ts": 1749464246164,
+  "count": 5,
+  "macVendor": "Apple, Inc."
 }
 ```
 
@@ -40,6 +41,7 @@ Event details:
   if the count is equal to 1.
 - `ts` - Unix timestamp of when the ARP packet was received, in milliseconds.
 - `count` - Number of packets with this IP-MAC combination seen so far.
+- `macVendor` - Vendor name for the MAC address OUI. `Unknown` if not found.
 
 ## Quick start guide
 
@@ -103,9 +105,14 @@ fswatch --event Created events/ | xargs -n 1 -I _ echo _
 /path/to/netreact/events/netreact-1747995771602.json
 ```
 
+## MAC vendor lookup
+
+Netreact ships with its own embedded MAC OUI database for MAC vendor lookup, based on publicly available MA-L data (see [oui.txt](oui.txt)).
+No external files or online services are required at runtime.
+
 ## TODO
 
-- [ ] MAC vendor detection
+- [x] MAC vendor detection
 - [ ] State file - optionally save the current state to a state file on exit and load when starting next time
 - [ ] Allow the user to sort the UI table
 - [ ] Exclusion files - optionally ignore selected IP, MAC or IP-MAC address combinations

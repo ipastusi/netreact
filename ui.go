@@ -20,6 +20,7 @@ type Column struct {
 var columns = []Column{
 	{"IP Address", 18},
 	{"MAC Address", 20},
+	{"MAC Vendor", 30},
 	{"First seen", 22},
 	{"Last seen", 22},
 	{"Packet count", 14},
@@ -28,11 +29,12 @@ var columns = []Column{
 // ui data structure
 
 type UIEntry struct {
-	IP      string
-	MAC     string
-	FirstTs string
-	LastTs  string
-	Count   int
+	IP        string
+	MAC       string
+	MACVendor string
+	FirstTs   string
+	LastTs    string
+	Count     int
 }
 
 // virtual table: https://github.com/rivo/tview/wiki/VirtualTable
@@ -53,12 +55,12 @@ func newUIApp() *UIApp {
 
 func (uiApp *UIApp) upsertAndRefreshTable(extArpEvent ExtendedArpEvent) {
 	defer uiApp.app.Draw()
-
 	ip := extArpEvent.ip.String()
 	mac := extArpEvent.mac.String()
 	timeFormat := "2006-01-02 15:04:05"
 	firstTs := time.UnixMilli(extArpEvent.firstTs).Format(timeFormat)
 	lastTs := time.UnixMilli(extArpEvent.ts).Format(timeFormat)
+	macVendor := extArpEvent.macVendor
 
 	// update, if found
 	hosts := uiApp.data
@@ -72,11 +74,12 @@ func (uiApp *UIApp) upsertAndRefreshTable(extArpEvent ExtendedArpEvent) {
 
 	// insert, if new
 	*hosts = append(*hosts, UIEntry{
-		IP:      ip,
-		MAC:     mac,
-		FirstTs: firstTs,
-		LastTs:  lastTs,
-		Count:   1,
+		IP:        ip,
+		MAC:       mac,
+		MACVendor: macVendor,
+		FirstTs:   firstTs,
+		LastTs:    lastTs,
+		Count:     1,
 	})
 }
 
@@ -88,11 +91,20 @@ func (uiApp *UIApp) GetCell(row int, col int) *tview.TableCell {
 	} else if col == 1 {
 		return tview.NewTableCell(alignLeft(entry.MAC, columns[1].width-1))
 	} else if col == 2 {
-		return tview.NewTableCell(alignLeft(entry.FirstTs, columns[2].width-1))
+		macVendor := entry.MACVendor
+		if len(entry.MACVendor) > columns[2].width {
+			maxTruncatedLen := columns[2].width - 3
+			truncatedLen := min(len(entry.MACVendor), maxTruncatedLen)
+			truncatedMacVendor := entry.MACVendor[:truncatedLen]
+			macVendor = fmt.Sprintf("%v...", truncatedMacVendor)
+		}
+		return tview.NewTableCell(alignLeft(macVendor, columns[2].width-1))
 	} else if col == 3 {
-		return tview.NewTableCell(alignLeft(entry.LastTs, columns[3].width-1))
+		return tview.NewTableCell(alignLeft(entry.FirstTs, columns[3].width-1))
+	} else if col == 4 {
+		return tview.NewTableCell(alignLeft(entry.LastTs, columns[4].width-1))
 	} else {
-		return tview.NewTableCell(alignRight(strconv.Itoa(entry.Count), columns[4].width-2))
+		return tview.NewTableCell(alignRight(strconv.Itoa(entry.Count), columns[5].width-2))
 	}
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"os"
@@ -44,15 +45,19 @@ func Test_processArpEvents(t *testing.T) {
 	h := newArpEventHandler(nil, getLogHandler(t), eventDir)
 	cache := newCache()
 
+	rpiMap, _ := hex.DecodeString("2ccf670c6ca4")
+	unknownMac, _ := hex.DecodeString("310c8acb8fab")
+
 	events := []struct {
 		arpEvent          ArpEvent
 		expectedCacheSize int
 		expectedCount     int
+		expectedMacVendor string
 	}{
-		{ArpEvent{[]byte{192, 168, 1, 100}, []byte{0x41, 0xC0, 0x5B, 0x0C, 0x6C, 0xA4}, time.Now().UnixMilli() + 0}, 1, 1},
-		{ArpEvent{[]byte{192, 168, 1, 200}, []byte{0x31, 0x0C, 0x8A, 0xCB, 0x8F, 0xAB}, time.Now().UnixMilli() + 1}, 2, 1},
-		{ArpEvent{[]byte{192, 168, 1, 100}, []byte{0x41, 0xC0, 0x5B, 0x0C, 0x6C, 0xA4}, time.Now().UnixMilli() + 2}, 2, 2},
-		{ArpEvent{[]byte{192, 168, 1, 100}, []byte{0x31, 0x0C, 0x8A, 0xCB, 0x8F, 0xAB}, time.Now().UnixMilli() + 3}, 3, 1},
+		{ArpEvent{[]byte{192, 168, 1, 100}, rpiMap, time.Now().UnixMilli() + 0}, 1, 1, "Raspberry Pi (Trading) Ltd"},
+		{ArpEvent{[]byte{192, 168, 1, 200}, unknownMac, time.Now().UnixMilli() + 1}, 2, 1, "Unknown"},
+		{ArpEvent{[]byte{192, 168, 1, 100}, rpiMap, time.Now().UnixMilli() + 2}, 2, 2, "Raspberry Pi (Trading) Ltd"},
+		{ArpEvent{[]byte{192, 168, 1, 100}, unknownMac, time.Now().UnixMilli() + 3}, 3, 1, "Unknown"},
 	}
 
 	for i, e := range events {
@@ -95,6 +100,7 @@ func Test_processArpEvents(t *testing.T) {
 			t.Fatal("MAC address not found in test log for iteration:", i)
 		}
 
+		// TODO: improve this test by switching from text search to JSON parsing
 		// event file checks
 		eventFileName := fmt.Sprintf("events/netreact-%v.json", e.arpEvent.ts)
 		eventFileBytes, err := os.ReadFile(eventFileName)
@@ -108,6 +114,9 @@ func Test_processArpEvents(t *testing.T) {
 		}
 		if !strings.Contains(eventFile, e.arpEvent.mac.String()) {
 			t.Fatal("MAC address not found in responder log for iteration:", i)
+		}
+		if !strings.Contains(eventFile, e.expectedMacVendor) {
+			t.Fatal("MAC expectedVendor not found in responder log for iteration:", i)
 		}
 	}
 }

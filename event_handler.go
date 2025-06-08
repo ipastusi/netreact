@@ -36,6 +36,7 @@ type ExtendedArpEvent struct {
 	firstTs   int64
 	count     int
 	eventType EventType
+	macVendor string
 }
 
 func (e ExtendedArpEvent) toEventJson() EventJson {
@@ -46,6 +47,7 @@ func (e ExtendedArpEvent) toEventJson() EventJson {
 		FirstTs:   e.firstTs,
 		Ts:        e.ts,
 		Count:     e.count,
+		MacVendor: e.macVendor,
 	}
 }
 
@@ -64,9 +66,14 @@ func newArpEventHandler(uiApp *UIApp, logHandler slog.Handler, eventDir string) 
 }
 
 func (h ArpEventHandler) handle(extArpEvent ExtendedArpEvent) {
+	h.lookupMacVendor(&extArpEvent)
 	h.handleUI(extArpEvent)
 	h.handleLog(extArpEvent)
 	h.handleEventFile(extArpEvent)
+}
+
+func (h ArpEventHandler) lookupMacVendor(extArpEvent *ExtendedArpEvent) {
+	(*extArpEvent).macVendor = macToVendor(extArpEvent.mac)
 }
 
 func (h ArpEventHandler) handleUI(extArpEvent ExtendedArpEvent) {
@@ -110,6 +117,7 @@ type EventJson struct {
 	FirstTs   int64  `json:"firstTs"`
 	Ts        int64  `json:"ts"`
 	Count     int    `json:"count"`
+	MacVendor string `json:"macVendor"`
 }
 
 func (h ArpEventHandler) logError(err error) {
