@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// There is no perfect solution for MAC expectedVendor lookup. Options include:
+// There is no perfect solution for MAC vendor lookup. Options include:
 // - Separate OUI lookup file distributed separately, which will introduce a new dependency.
 // - Separate OUI lookup file distributed with netreact, which will require one more file in addition to the binary.
 // - Embedding the OUI lookup data directly into the Go code, which will cause IDE to freeze due to its size.

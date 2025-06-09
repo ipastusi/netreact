@@ -116,7 +116,7 @@ func Test_processArpEvents(t *testing.T) {
 			t.Fatal("MAC address not found in responder log for iteration:", i)
 		}
 		if !strings.Contains(eventFile, e.expectedMacVendor) {
-			t.Fatal("MAC expectedVendor not found in responder log for iteration:", i)
+			t.Fatal("MAC vendor not found in responder log for iteration:", i)
 		}
 	}
 }
