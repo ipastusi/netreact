@@ -66,7 +66,7 @@ Usage of ./netreact:
     	interface name, e.g. eth0
   -l string
     	log file (default "netreact.log")
-  -p	put the interface in promiscuous mode (default true)
+  -p	put the interface in promiscuous mode (default false)
   -u	display textual user interface (default true)
 ```
 
