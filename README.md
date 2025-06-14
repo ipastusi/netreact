@@ -67,6 +67,8 @@ Usage of ./netreact:
   -l string
     	log file (default "netreact.log")
   -p	put the interface in promiscuous mode (default false)
+  -s string
+    	state file (default none)
   -u	display textual user interface (default true)
 ```
 
@@ -74,8 +76,9 @@ Examples:
 
 ```
 ./netreact -i eth0 -d events
-./netreact -i en0 -d events -f 'arp and src host not 0.0.0.0'
-./netreact -i en0 -d events -u=false
+./netreact -i eth0 -d events -f 'arp and src host not 0.0.0.0'
+./netreact -i eth0 -d events -u=false
+./netreact -i eth0 -d events -s nrstate.json
 ```
 
 ## Event files
@@ -105,6 +108,11 @@ fswatch --event Created events/ | xargs -n 1 -I _ echo _
 /path/to/netreact/events/netreact-1747995771602.json
 ```
 
+## State file
+
+`-s` flag allows you to define a JSON state file to / from which to save / load data. It allows you to persist the collected data between
+executions.
+
 ## MAC vendor lookup
 
 Netreact ships with its own embedded MAC OUI database for MAC vendor lookup, based on publicly available MA-L data (see [oui.txt](oui.txt)).
@@ -113,7 +121,7 @@ No external files or online services are required at runtime.
 ## TODO
 
 - [x] MAC vendor detection
-- [ ] State file - optionally save the current state to a state file on exit and load when starting next time
+- [x] State file - optionally save the current state to a state file on exit and load when starting next time
 - [ ] Allow the user to sort the UI table
 - [ ] Exclusion files - optionally ignore selected IP, MAC or IP-MAC address combinations
 - [ ] New event type - new host detected
@@ -122,3 +130,4 @@ No external files or online services are required at runtime.
 - [ ] New event type - 0.0.0.0 source IP address
 - [ ] New event type - new IP address for the same MAC
 - [ ] New event type - new MAC address for the same IP
+- [ ] Schema validation when loading a state file

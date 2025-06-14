@@ -64,18 +64,18 @@ func Test_processArpEvents(t *testing.T) {
 		processArpEvent(e.arpEvent, cache, h)
 
 		// cache checks
-		cacheSize := len(cache.items)
+		cacheSize := len(cache.Items)
 		if cacheSize != e.expectedCacheSize {
 			t.Fatalf("unexpected cache size, expected: %v, got: %v", cacheSize, e.expectedCacheSize)
 		}
 
 		value := cache.get(e.arpEvent)
 		if e.expectedCount == 1 {
-			if value.firstTs != value.lastTs {
-				t.Fatalf("unexpected timestamp difference, first: %v, last: %v", value.firstTs, value.lastTs)
+			if value.FirstTs != value.LastTs {
+				t.Fatalf("unexpected timestamp difference, first: %v, last: %v", value.FirstTs, value.LastTs)
 			}
-		} else if value.firstTs >= value.lastTs {
-			t.Fatalf("unexpected timestamp difference, first: %v, last: %v", value.firstTs, value.lastTs)
+		} else if value.FirstTs >= value.LastTs {
+			t.Fatalf("unexpected timestamp difference, first: %v, last: %v", value.FirstTs, value.LastTs)
 		}
 
 		// log checks

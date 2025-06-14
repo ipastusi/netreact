@@ -10,12 +10,13 @@ import (
 )
 
 type CliFlags struct {
-	ifaceName   string
-	filter      string
-	logFileName string
-	promiscMode bool
-	eventDir    string
-	uiEnabled   bool
+	ifaceName     string
+	filter        string
+	logFileName   string
+	stateFileName string
+	promiscMode   bool
+	eventDir      string
+	uiEnabled     bool
 }
 
 func getCliFlags() (CliFlags, error) {
@@ -23,17 +24,19 @@ func getCliFlags() (CliFlags, error) {
 	filter := flag.String("f", "arp", "custom BPF filter, e.g. \"arp and src host not 0.0.0.0\"")
 	ifaceName := flag.String("i", "", "interface name, e.g. eth0")
 	logFileName := flag.String("l", "netreact.log", "log file")
+	stateFileName := flag.String("s", "", "state file (default none)")
 	promisc := flag.Bool("p", false, "put the interface in promiscuous mode (default false)")
 	ui := flag.Bool("u", true, "display textual user interface")
 
 	flag.Parse()
 	flags := CliFlags{
-		ifaceName:   *ifaceName,
-		filter:      *filter,
-		logFileName: *logFileName,
-		promiscMode: *promisc,
-		eventDir:    *eventDir,
-		uiEnabled:   *ui,
+		ifaceName:     *ifaceName,
+		filter:        *filter,
+		logFileName:   *logFileName,
+		stateFileName: *stateFileName,
+		promiscMode:   *promisc,
+		eventDir:      *eventDir,
+		uiEnabled:     *ui,
 	}
 
 	err := processCliFlags(flags)

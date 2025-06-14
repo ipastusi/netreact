@@ -1,12 +1,16 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"log"
+	"net"
 	"os"
+	"slices"
 	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -45,21 +49,49 @@ type UIApp struct {
 	data *[]UIEntry
 }
 
-func newUIApp() *UIApp {
+func newUIApp(cache Cache) *UIApp {
 	return &UIApp{
 		TableContentReadOnly: tview.TableContentReadOnly{},
 		app:                  tview.NewApplication(),
-		data:                 &[]UIEntry{},
+		data:                 initialDataLoad(cache),
 	}
+}
+
+func initialDataLoad(cache Cache) *[]UIEntry {
+	var data []UIEntry
+
+	for k, v := range cache.Items {
+		ip := net.IP(k[:4])
+		mac := net.HardwareAddr(k[4:])
+		row := UIEntry{
+			IP:        ip.String(),
+			MAC:       mac.String(),
+			MACVendor: macToVendor(mac),
+			FirstTs:   unixTsToTime(v.FirstTs),
+			LastTs:    unixTsToTime(v.LastTs),
+			Count:     v.Count,
+		}
+		data = append(data, row)
+	}
+
+	slices.SortFunc(data, func(a, b UIEntry) int {
+		return cmp.Compare(a.FirstTs, b.FirstTs)
+	})
+
+	return &data
+}
+
+func unixTsToTime(ts int64) string {
+	timeFormat := "2006-01-02 15:04:05"
+	return time.UnixMilli(ts).Format(timeFormat)
 }
 
 func (uiApp *UIApp) upsertAndRefreshTable(extArpEvent ExtendedArpEvent) {
 	defer uiApp.app.Draw()
 	ip := extArpEvent.ip.String()
 	mac := extArpEvent.mac.String()
-	timeFormat := "2006-01-02 15:04:05"
-	firstTs := time.UnixMilli(extArpEvent.firstTs).Format(timeFormat)
-	lastTs := time.UnixMilli(extArpEvent.ts).Format(timeFormat)
+	firstTs := unixTsToTime(extArpEvent.firstTs)
+	lastTs := unixTsToTime(extArpEvent.ts)
 	macVendor := extArpEvent.macVendor
 
 	// update, if found
@@ -118,7 +150,7 @@ func (uiApp *UIApp) GetColumnCount() int {
 
 // load the UI
 
-func loadUI(uiApp *UIApp, ifaceName string) {
+func loadUI(uiApp *UIApp, ifaceName string, stateFileName string) {
 	headerRow := getHeaderRow()
 	table := tview.NewTable().SetEvaluateAllRows(false)
 	table.SetContent(uiApp)
@@ -129,7 +161,7 @@ func loadUI(uiApp *UIApp, ifaceName string) {
 			SetText(text)
 	}
 
-	titleBar := fmt.Sprintf(" Netreact  |  Interface: %v ", ifaceName)
+	titleBar := getTitleBar(ifaceName, stateFileName)
 	menuBar := fmt.Sprintf(" ▲ - Scroll Up  |  ▼ - Scroll Down  |  Q / ESC - Quit")
 	grid := tview.NewGrid().
 		SetRows(1, 1, 0, 1).
@@ -143,7 +175,8 @@ func loadUI(uiApp *UIApp, ifaceName string) {
 	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == 'q' || event.Key() == tcell.KeyEsc {
 			uiApp.app.Stop()
-			os.Exit(0)
+			err := syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+			exitOnError(err)
 		} else if event.Key() == tcell.KeyLeft || event.Key() == tcell.KeyRight {
 			return nil
 		}
@@ -155,6 +188,14 @@ func loadUI(uiApp *UIApp, ifaceName string) {
 		log.Println("Unable to load the UI:", err)
 		os.Exit(1)
 	}
+}
+
+func getTitleBar(ifaceName string, stateFileName string) string {
+	titleBar := fmt.Sprintf(" Netreact  |  Interface: %v ", ifaceName)
+	if stateFileName != "" {
+		titleBar += fmt.Sprintf(" |  State file: %v", stateFileName)
+	}
+	return titleBar
 }
 
 func getHeaderRow() string {

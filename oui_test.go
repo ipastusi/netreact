@@ -1,31 +1,30 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
 	"net"
 	"testing"
 )
 
 func Test_macToVendor(t *testing.T) {
-	xerox, _ := hex.DecodeString("000000000000")
-	hp, _ := hex.DecodeString("fc15b4000000")
-	nokia, _ := hex.DecodeString("fc1ca1000000")
-	ieee, _ := hex.DecodeString("fcffaa000000")
-	unknownBeforeHp, _ := hex.DecodeString("fc15b3000000")
-	unknownAfterHp, _ := hex.DecodeString("fc15b5000000")
+	xerox, _ := net.ParseMAC("00:00:00:00:00:00")
+	hp, _ := net.ParseMAC("fc:15:b4:00:00:00")
+	nokia, _ := net.ParseMAC("fc:1c:a1:00:00:00")
+	ieee, _ := net.ParseMAC("fc:ff:aa:00:00:00")
+	unknownBeforeHp, _ := net.ParseMAC("fc:15:b3:00:00:00")
+	unknownAfterHp, _ := net.ParseMAC("fc:15:b5:00:00:00")
 
 	events := []struct {
 		name           string
 		mac            net.HardwareAddr
 		expectedVendor string
 	}{
-		{"First entry", net.HardwareAddr(xerox), "XEROX CORPORATION"},
-		{"Hewlett Packard", net.HardwareAddr(hp), "Hewlett Packard"},
-		{"Nokia", net.HardwareAddr(nokia), "Nokia"},
-		{"Last entry", net.HardwareAddr(ieee), "IEEE Registration Authority"},
-		{"Nonexistent before HP", net.HardwareAddr(unknownBeforeHp), "Unknown"},
-		{"Nonexistent after HP", net.HardwareAddr(unknownAfterHp), "Unknown"},
+		{"First entry", xerox, "XEROX CORPORATION"},
+		{"Hewlett Packard", hp, "Hewlett Packard"},
+		{"Nokia", nokia, "Nokia"},
+		{"Last entry", ieee, "IEEE Registration Authority"},
+		{"Nonexistent before HP", unknownBeforeHp, "Unknown"},
+		{"Nonexistent after HP", unknownAfterHp, "Unknown"},
 	}
 
 	for _, e := range events {
