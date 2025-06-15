@@ -10,33 +10,39 @@ import (
 )
 
 type CliFlags struct {
-	ifaceName     string
-	filter        string
-	logFileName   string
-	stateFileName string
-	promiscMode   bool
-	eventDir      string
-	uiEnabled     bool
+	ifaceName         string
+	filter            string
+	logFileName       string
+	stateFileName     string
+	promiscMode       bool
+	eventDir          string
+	uiEnabled         bool
+	hostEventFilter   string
+	packetEventFilter string
 }
 
 func getCliFlags() (CliFlags, error) {
 	eventDir := flag.String("d", "", "directory where to store the event files, relative to the working directory, if provided (default working directory)")
-	filter := flag.String("f", "arp", "custom BPF filter, e.g. \"arp and src host not 0.0.0.0\"")
+	filter := flag.String("f", "arp", "BPF filter, e.g. \"arp and src host not 0.0.0.0\"")
+	packetEventFilter := flag.String("fp", "1111", "packet event filter")
+	hostEventFilter := flag.String("fh", "1111", "host event filter")
 	ifaceName := flag.String("i", "", "interface name, e.g. eth0")
 	logFileName := flag.String("l", "netreact.log", "log file")
-	stateFileName := flag.String("s", "", "state file (default none)")
 	promisc := flag.Bool("p", false, "put the interface in promiscuous mode (default false)")
+	stateFileName := flag.String("s", "", "state file (default none)")
 	ui := flag.Bool("u", true, "display textual user interface")
 
 	flag.Parse()
 	flags := CliFlags{
-		ifaceName:     *ifaceName,
-		filter:        *filter,
-		logFileName:   *logFileName,
-		stateFileName: *stateFileName,
-		promiscMode:   *promisc,
-		eventDir:      *eventDir,
-		uiEnabled:     *ui,
+		eventDir:          *eventDir,
+		filter:            *filter,
+		packetEventFilter: *packetEventFilter,
+		hostEventFilter:   *hostEventFilter,
+		ifaceName:         *ifaceName,
+		logFileName:       *logFileName,
+		promiscMode:       *promisc,
+		stateFileName:     *stateFileName,
+		uiEnabled:         *ui,
 	}
 
 	err := processCliFlags(flags)
@@ -63,5 +69,24 @@ func processCliFlags(flags CliFlags) error {
 		}
 		flags.eventDir = absEventDirPath
 	}
+
+	if len(flags.packetEventFilter) != 4 {
+		return fmt.Errorf("incorrect length of packet event filter: %v", len(flags.packetEventFilter))
+	}
+	for i, char := range flags.packetEventFilter {
+		if char != '0' && char != '1' {
+			return fmt.Errorf("invalid packet event filter flag %v at position %v", char, i)
+		}
+	}
+
+	if len(flags.hostEventFilter) != 4 {
+		return fmt.Errorf("incorrect length of host event filter: %v", len(flags.hostEventFilter))
+	}
+	for i, char := range flags.hostEventFilter {
+		if char != '0' && char != '1' {
+			return fmt.Errorf("invalid host event filter flag %v at position %v", char, i)
+		}
+	}
+
 	return nil
 }

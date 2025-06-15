@@ -14,9 +14,8 @@ Once started, Netreact will passively listen to ARP traffic, and:
 
 - Update the user interface every time a new packet is received, unless you decided to disable the user interface using the `-u=false` flag.
 - Log to `netreact.log` using JSON Lines format. Log file name can be customised using the `-l` flag.
-- Create a separate event file in JSON format for each event. File names will match `netreact-<unix_timestamp>-<event_code>.json` pattern,
-  e.g. `netreact-1747995770259-100.json`. By default the files will be created in the working directory. However, you are encouraged to
-  specify a custom directory using the `-d` flag. See section below for more information about event files.
+- Create event files in JSON format. File names will match `netreact-<unix_timestamp>-<event_code>.json` pattern,
+  e.g. `netreact-1747995770259-100.json`. See section below for more info.
 
 ## Quick start guide
 
@@ -36,7 +35,11 @@ Usage of ./netreact:
   -d string
     	directory where to store the event files, relative to the working directory, if provided (default working directory)
   -f string
-    	custom BPF filter, e.g. "arp and src host not 0.0.0.0" (default "arp")
+    	BPF filter, e.g. "arp and src host not 0.0.0.0" (default "arp")
+  -fh string
+    	host event filter (default "1111")
+  -fp string
+    	packet event filter (default "1111")
   -i string
     	interface name, e.g. eth0
   -l string
@@ -54,22 +57,32 @@ Examples:
 ./netreact -i eth0 -d events -f 'arp and src host not 0.0.0.0'
 ./netreact -i eth0 -d events -u=false
 ./netreact -i eth0 -d events -s nrstate.json
+./netreact -i eth0 -d events -fp '0000' -fh '1111'
 ```
 
 ## Event files
 
 Netreact can generate the following types of events:
 
-| Event type                    | Event code |
-|-------------------------------|------------|
-| NEW_PACKET                    | 100        |
-| NEW_LINK_LOCAL_UNICAST_PACKET | 101        |
-| NEW_UNSPECIFIED_PACKET        | 102        |
-| NEW_BROADCAST_PACKET          | 103        |
-| NEW_HOST                      | 200        |
-| NEW_LINK_LOCAL_UNICAST_HOST   | 201        |
-| NEW_UNSPECIFIED_HOST          | 202        |
-| NEW_BROADCAST_HOST            | 203        |
+| Event type                    | Event code | Event filter |
+|-------------------------------|------------|--------------|
+| NEW_PACKET                    | 100        | 1000         |
+| NEW_LINK_LOCAL_UNICAST_PACKET | 101        | 0100         |
+| NEW_UNSPECIFIED_PACKET        | 102        | 0010         |
+| NEW_BROADCAST_PACKET          | 103        | 0001         |
+| NEW_HOST                      | 200        | 1000         |
+| NEW_LINK_LOCAL_UNICAST_HOST   | 201        | 0100         |
+| NEW_UNSPECIFIED_HOST          | 202        | 0010         |
+| NEW_BROADCAST_HOST            | 203        | 0001         |
+
+Use `-fp` and `-fh` flags to produce event files for selected event types only, e.g.:
+
+```
+-fp '0000' -fh '1100'
+```
+
+The above configuration will prevent Netreact from emiting any packet-related events, while emiting only `NEW_HOST` and
+`NEW_LINK_LOCAL_UNICAST_HOST` host-related events.
 
 ### Packet-related events
 
@@ -161,10 +174,10 @@ No external files or online services are required at runtime.
 - [x] New event type - link-local unicast source IP address (169.254.0.0/16)
 - [x] New event type - 0.0.0.0 source IP address
 - [x] New event type - 255.255.255.255 source IP address
+- [x] Event type filters
 - [ ] New event type - unexpected source IP address
 - [ ] New event type - new IP address for the same MAC
 - [ ] New event type - new MAC address for the same IP
-- [ ] Event type filter
 - [ ] Exclusion files - optionally ignore selected IP, MAC or IP-MAC address combinations
 - [ ] Schema validation when loading a state file
 - [ ] Allow the user to sort the UI table

@@ -10,17 +10,19 @@ import (
 	"time"
 )
 
+// event type
+
 type EventType int
 
 const (
-	NewPacket EventType = iota + 100
-	NewLinkLocalUnicastPacket
-	NewUnspecifiedPacket
-	NewBroadcastPacket
-	NewHost EventType = iota + 196
-	NewLinkLocalUnicastHost
-	NewUnspecifiedHost
-	NewBroadcastHost
+	NewPacket                 EventType = 100
+	NewLinkLocalUnicastPacket EventType = 101
+	NewUnspecifiedPacket      EventType = 102
+	NewBroadcastPacket        EventType = 103
+	NewHost                   EventType = 200
+	NewLinkLocalUnicastHost   EventType = 201
+	NewUnspecifiedHost        EventType = 202
+	NewBroadcastHost          EventType = 203
 )
 
 func (e EventType) describe() string {
@@ -46,11 +48,15 @@ func (e EventType) describe() string {
 	}
 }
 
+// arp event
+
 type ArpEvent struct {
 	ip  net.IP
 	mac net.HardwareAddr
 	ts  int64
 }
+
+// extended arp event
 
 type ExtendedArpEvent struct {
 	ArpEvent
@@ -81,17 +87,23 @@ func (e ExtendedArpEvent) toNewHostJson(eventType EventType) EventJson {
 	}
 }
 
+// arp event handler
+
 type ArpEventHandler struct {
-	uiApp      *UIApp
-	logHandler slog.Handler
-	eventDir   string
+	uiApp             *UIApp
+	logHandler        slog.Handler
+	eventDir          string
+	packetEventFilter string
+	hostEventFilter   string
 }
 
-func newArpEventHandler(uiApp *UIApp, logHandler slog.Handler, eventDir string) ArpEventHandler {
+func newArpEventHandler(uiApp *UIApp, logHandler slog.Handler, eventDir string, packetEventFilter string, hostEventFilter string) ArpEventHandler {
 	return ArpEventHandler{
-		uiApp:      uiApp,
-		logHandler: logHandler,
-		eventDir:   eventDir,
+		uiApp:             uiApp,
+		logHandler:        logHandler,
+		eventDir:          eventDir,
+		packetEventFilter: packetEventFilter,
+		hostEventFilter:   hostEventFilter,
 	}
 }
 
@@ -124,28 +136,36 @@ func (h ArpEventHandler) handleLog(extArpEvent ExtendedArpEvent) {
 }
 
 func (h ArpEventHandler) handleEventFiles(extArpEvent ExtendedArpEvent) {
-	h.handleNewPacketEventFile(extArpEvent, NewPacket)
-	if extArpEvent.count == 1 {
+	if h.packetEventFilter[0] == '1' {
+		h.handleNewPacketEventFile(extArpEvent, NewPacket)
+	}
+	if h.hostEventFilter[0] == '1' && extArpEvent.count == 1 {
 		h.handleNewHostEventFile(extArpEvent, NewHost)
 	}
 
 	if extArpEvent.ip.IsLinkLocalUnicast() {
-		h.handleNewPacketEventFile(extArpEvent, NewLinkLocalUnicastPacket)
-		if extArpEvent.count == 1 {
+		if h.packetEventFilter[1] == '1' {
+			h.handleNewPacketEventFile(extArpEvent, NewLinkLocalUnicastPacket)
+		}
+		if h.hostEventFilter[1] == '1' && extArpEvent.count == 1 {
 			h.handleNewHostEventFile(extArpEvent, NewLinkLocalUnicastHost)
 		}
 	}
 
 	if extArpEvent.ip.IsUnspecified() {
-		h.handleNewPacketEventFile(extArpEvent, NewUnspecifiedPacket)
-		if extArpEvent.count == 1 {
+		if h.packetEventFilter[2] == '1' {
+			h.handleNewPacketEventFile(extArpEvent, NewUnspecifiedPacket)
+		}
+		if h.hostEventFilter[2] == '1' && extArpEvent.count == 1 {
 			h.handleNewHostEventFile(extArpEvent, NewUnspecifiedHost)
 		}
 	}
 
 	if extArpEvent.ip.Equal(net.IPv4bcast) {
-		h.handleNewPacketEventFile(extArpEvent, NewBroadcastPacket)
-		if extArpEvent.count == 1 {
+		if h.packetEventFilter[3] == '1' {
+			h.handleNewPacketEventFile(extArpEvent, NewBroadcastPacket)
+		}
+		if h.hostEventFilter[3] == '1' && extArpEvent.count == 1 {
 			h.handleNewHostEventFile(extArpEvent, NewBroadcastHost)
 		}
 	}
@@ -175,6 +195,14 @@ func (h ArpEventHandler) storeEventFile(eventJson EventJson, eventType EventType
 	}
 }
 
+func (h ArpEventHandler) logError(err error) {
+	now := time.UnixMilli(time.Now().Unix())
+	record := slog.NewRecord(now, slog.LevelError, err.Error(), 0)
+	_ = h.logHandler.Handle(nil, record)
+}
+
+// event json
+
 type EventJson struct {
 	// IP and MAC addresses are stored as strings due to:
 	// https://github.com/golang/go/issues/29678
@@ -185,10 +213,4 @@ type EventJson struct {
 	Ts        int64  `json:"ts"`
 	Count     int    `json:"count,omitempty"`
 	MacVendor string `json:"macVendor"`
-}
-
-func (h ArpEventHandler) logError(err error) {
-	now := time.UnixMilli(time.Now().Unix())
-	record := slog.NewRecord(now, slog.LevelError, err.Error(), 0)
-	_ = h.logHandler.Handle(nil, record)
 }

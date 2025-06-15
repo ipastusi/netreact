@@ -43,7 +43,7 @@ func Test_processArpEvents(t *testing.T) {
 	}
 
 	eventDir := filepath.Join(pwd, "events")
-	h := newArpEventHandler(nil, getLogHandler(t), eventDir)
+	h := newArpEventHandler(nil, getLogHandler(t), eventDir, "1111", "1111")
 	cache := newCache()
 
 	rpiMac, _ := net.ParseMAC("2c:cf:67:0c:6c:a4")

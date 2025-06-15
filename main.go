@@ -67,8 +67,10 @@ func main() {
 	}
 
 	command := flags.eventDir
+	packetEventFilter := flags.packetEventFilter
+	hostEventFilter := flags.hostEventFilter
 	logHandler := slog.NewJSONHandler(logFile, nil)
-	handler := newArpEventHandler(uiApp, logHandler, command)
+	handler := newArpEventHandler(uiApp, logHandler, command, packetEventFilter, hostEventFilter)
 	localMac := []byte(iface.HardwareAddr)
 	packetSource := gopacket.NewPacketSource(pcapHandle, pcapHandle.LinkType())
 	for packet := range packetSource.Packets() {
