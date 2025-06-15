@@ -60,6 +60,16 @@ Examples:
 ./netreact -i eth0 -d events -fp '0000' -fh '1111'
 ```
 
+## State file
+
+`-s` flag allows you to define a JSON state file to / from which to save / load data. It allows you to persist the collected data between
+executions.
+
+## MAC vendor lookup
+
+Netreact ships with its own embedded MAC OUI database for MAC vendor lookup, based on publicly available MA-L data (see [oui.txt](oui.txt)).
+No external files or online services are required at runtime.
+
 ## Event files
 
 Netreact can generate the following types of events:
@@ -157,16 +167,6 @@ fswatch --event Created events/ | xargs -n 1 -I _ echo _
 /path/to/netreact/events/netreact-1747995770336-100.json
 /path/to/netreact/events/netreact-1747995771602-100.json
 ```
-
-## State file
-
-`-s` flag allows you to define a JSON state file to / from which to save / load data. It allows you to persist the collected data between
-executions.
-
-## MAC vendor lookup
-
-Netreact ships with its own embedded MAC OUI database for MAC vendor lookup, based on publicly available MA-L data (see [oui.txt](oui.txt)).
-No external files or online services are required at runtime.
 
 ## TODO
 
