@@ -64,16 +64,18 @@ Examples:
 
 Netreact can generate the following types of events:
 
-| Event type                    | Event code | Event filter |
-|-------------------------------|------------|--------------|
-| NEW_PACKET                    | 100        | 1000         |
-| NEW_LINK_LOCAL_UNICAST_PACKET | 101        | 0100         |
-| NEW_UNSPECIFIED_PACKET        | 102        | 0010         |
-| NEW_BROADCAST_PACKET          | 103        | 0001         |
-| NEW_HOST                      | 200        | 1000         |
-| NEW_LINK_LOCAL_UNICAST_HOST   | 201        | 0100         |
-| NEW_UNSPECIFIED_HOST          | 202        | 0010         |
-| NEW_BROADCAST_HOST            | 203        | 0001         |
+| Event type                    | Event code | Packet event filter | Host event filter |
+|-------------------------------|------------|---------------------|-------------------|
+| NEW_PACKET                    | 100        | 1000                |                   |
+| NEW_LINK_LOCAL_UNICAST_PACKET | 101        | 0100                |                   |
+| NEW_UNSPECIFIED_PACKET        | 102        | 0010                |                   |
+| NEW_BROADCAST_PACKET          | 103        | 0001                |                   |
+| NEW_HOST                      | 200        |                     | 1000              |
+| NEW_LINK_LOCAL_UNICAST_HOST   | 201        |                     | 0100              |
+| NEW_UNSPECIFIED_HOST          | 202        |                     | 0010              |
+| NEW_BROADCAST_HOST            | 203        |                     | 0001              |
+
+Event codes are used in generated filenames only.
 
 Use `-fp` and `-fh` flags to produce event files for selected event types only, e.g.:
 
