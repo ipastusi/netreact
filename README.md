@@ -86,7 +86,7 @@ The above configuration will prevent Netreact from emiting any packet-related ev
 
 ### Packet-related events
 
-Packet-related event types are triggered every time when a given packet is received. Event codes are 100-199.
+Packet-related event types are triggered every time when a given packet is received. Event codes are 100-103.
 Format of packet-related event files (eventType will differ):
 
 ```json
@@ -103,7 +103,7 @@ Format of packet-related event files (eventType will differ):
 
 ### Host-related events
 
-Host-related event types will be triggered only once per host first time given packet is received. Event codes are 200-299.
+Host-related event types will be triggered only once per host first time given packet is received. Event codes are 200-203.
 Format of packet-related event files (eventType will differ):
 
 ```json
