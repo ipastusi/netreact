@@ -66,10 +66,9 @@ func (c *Cache) update(arpEvent ArpEvent) ExtendedArpEvent {
 	c.Items[key] = val
 
 	return ExtendedArpEvent{
-		ArpEvent:  arpEvent,
-		firstTs:   val.FirstTs,
-		count:     val.Count,
-		eventType: ArpPacketReceived,
+		ArpEvent: arpEvent,
+		firstTs:  val.FirstTs,
+		count:    val.Count,
 	}
 }
 

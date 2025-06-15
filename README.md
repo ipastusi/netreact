@@ -14,34 +14,9 @@ Once started, Netreact will passively listen to ARP traffic, and:
 
 - Update the user interface every time a new packet is received, unless you decided to disable the user interface using the `-u=false` flag.
 - Log to `netreact.log` using JSON Lines format. Log file name can be customised using the `-l` flag.
-- Create a separate event file for each event. File names will match `netreact-<unix_timestamp>.json` pattern, e.g.
-  `netreact-1747995770259.json`. By default the files will be created in the working directory. However, you are encouraged to specify a
-  custom directory using the `-d` flag.
-
-Sample event file:
-
-```json
-{
-  "eventType": "ARP_PACKET_RECEIVED",
-  "ip": "192.168.8.100",
-  "mac": "f8:4e:73:2d:1c:8a",
-  "firstTs": 1749464243156,
-  "ts": 1749464246164,
-  "count": 5,
-  "macVendor": "Apple, Inc."
-}
-```
-
-Event details:
-
-- `eventType` - currently only `ARP_PACKET_RECEIVED` is supported.
-- `ip` - ARP packet source IP address.
-- `mac` - ARP packet source MAC address.
-- `firstTs` - Unix timestamp of when this IP-MAC combination was first seen, in milliseconds. It will be the same as the current timestamp
-  if the count is equal to 1.
-- `ts` - Unix timestamp of when the ARP packet was received, in milliseconds.
-- `count` - Number of packets with this IP-MAC combination seen so far.
-- `macVendor` - Vendor name for the MAC address OUI. `Unknown` if not found.
+- Create a separate event file in JSON format for each event. File names will match `netreact-<unix_timestamp>-<event_code>.json` pattern,
+  e.g. `netreact-1747995770259-0.json`. By default the files will be created in the working directory. However, you are encouraged to
+  specify a custom directory using the `-d` flag. See section below for more information about event files.
 
 ## Quick start guide
 
@@ -83,7 +58,56 @@ Examples:
 
 ## Event files
 
-Event files offer you the ability to trigger custom responses to detected ARP events. You can implement arbitrary event file detection
+Netreact can generate the following types of events:
+
+| Event type                  | Event code |
+|-----------------------------|------------|
+| NEW_ARP_PACKET              | 0          |
+| NEW_HOST                    | 1          |
+| NEW_LINK_LOCAL_UNICAST_HOST | 2          |
+| NEW_UNSPECIFIED_HOST        | 3          |
+| NEW_BROADCAST_HOST          | 4          |
+
+Format of `NEW_ARP_PACKET` event file:
+
+```json
+{
+  "eventType": "NEW_ARP_PACKET",
+  "ip": "192.168.8.100",
+  "mac": "f8:4e:73:2d:1c:8a",
+  "firstTs": 1749464243156,
+  "ts": 1749464246164,
+  "count": 5,
+  "macVendor": "Apple, Inc."
+}
+```
+
+Format of  `NEW_HOST`, `NEW_LINK_LOCAL_UNICAST_HOST`, `NEW_UNSPECIFIED_HOST` and `NEW_BROADCAST_HOST` event files, `eventType` will differ:
+
+```json
+{
+  "eventType": "NEW_HOST",
+  "ip": "192.168.8.100",
+  "mac": "f8:4e:73:2d:1c:8a",
+  "ts": 1749464246164,
+  "macVendor": "Apple, Inc."
+}
+```
+
+Event details:
+
+- `eventType` - One of the supported event types.
+- `ip` - ARP packet source IP address.
+- `mac` - ARP packet source MAC address.
+- `firstTs` - Unix timestamp of when this IP-MAC combination was first seen, in milliseconds. It will be the same as the current timestamp
+  if the count is equal to 1.
+- `ts` - Unix timestamp of when the ARP packet was received, in milliseconds.
+- `count` - Number of packets with this IP-MAC combination seen so far.
+- `macVendor` - Vendor name for the MAC address OUI. `Unknown` if not found.
+
+## Event handling
+
+Event files offer you the ability to trigger custom responses to the ARP events. You can implement arbitrary event file detection
 mechanism and response logic.
 
 On Linux you might want to use `inotifywait` to detect event file creation:
@@ -92,9 +116,9 @@ On Linux you might want to use `inotifywait` to detect event file creation:
 ./netreact -i eth0 -d events
 
 inotifywait -qme close_write events/ --format %w%f | parallel -u echo
-events/netreact-1747995770259.json
-events/netreact-1747995770270.json
-events/netreact-1747995770292.json
+events/netreact-1747995770259-0.json
+events/netreact-1747995770270-0.json
+events/netreact-1747995770292-0.json
 ```
 
 On macOS you might want to use `fswatch`:
@@ -103,9 +127,9 @@ On macOS you might want to use `fswatch`:
 ./netreact -i en0 -d events
 
 fswatch --event Created events/ | xargs -n 1 -I _ echo _
-/path/to/netreact/events/netreact-1747995770294.json
-/path/to/netreact/events/netreact-1747995770336.json
-/path/to/netreact/events/netreact-1747995771602.json
+/path/to/netreact/events/netreact-1747995770294-0.json
+/path/to/netreact/events/netreact-1747995770336-0.json
+/path/to/netreact/events/netreact-1747995771602-0.json
 ```
 
 ## State file
@@ -122,12 +146,14 @@ No external files or online services are required at runtime.
 
 - [x] MAC vendor detection
 - [x] State file - optionally save the current state to a state file on exit and load when starting next time
-- [ ] Allow the user to sort the UI table
-- [ ] Exclusion files - optionally ignore selected IP, MAC or IP-MAC address combinations
-- [ ] New event type - new host detected
+- [x] New event type - new host detected
+- [x] New event type - link-local unicast source IP address (169.254.0.0/16)
+- [x] New event type - 0.0.0.0 source IP address
+- [x] New event type - 255.255.255.255 source IP address
 - [ ] New event type - unexpected source IP address
-- [ ] New event type - link-local source IP address (169.254.0.0/16)
-- [ ] New event type - 0.0.0.0 source IP address
 - [ ] New event type - new IP address for the same MAC
 - [ ] New event type - new MAC address for the same IP
+- [ ] Event type filter
+- [ ] Exclusion files - optionally ignore selected IP, MAC or IP-MAC address combinations
 - [ ] Schema validation when loading a state file
+- [ ] Allow the user to sort the UI table

@@ -7,7 +7,7 @@ import (
 )
 
 func Test_cacheDeserUpdateSer(t *testing.T) {
-	// deserializa
+	// deserialize
 	inputJson := []byte("{\"items\":{\"0a000001f4ce23010203\":{\"firstTs\":1749913040850,\"lastTs\":1749913040850,\"count\":1}}}")
 	cache, err := cacheFromJson(inputJson)
 	if err != nil {
