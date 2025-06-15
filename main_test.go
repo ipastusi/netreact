@@ -56,15 +56,15 @@ func Test_processArpEvents(t *testing.T) {
 		expectedCacheSize  int
 		expectedCount      int
 		expectedMacVendor  string
-		expectedEventCodes []int
+		expectedEventCodes []EventType
 	}{
-		{ArpEvent{net.ParseIP("192.168.1.100"), rpiMac, time.Now().UnixMilli() + 0}, 1, 1, "Raspberry Pi (Trading) Ltd", []int{0, 1}},
-		{ArpEvent{net.ParseIP("192.168.1.200"), unknownMac, time.Now().UnixMilli() + 1}, 2, 1, "Unknown", []int{0, 1}},
-		{ArpEvent{net.ParseIP("192.168.1.100"), rpiMac, time.Now().UnixMilli() + 2}, 2, 2, "Raspberry Pi (Trading) Ltd", []int{0}},
-		{ArpEvent{net.ParseIP("192.168.1.200"), unknownMac, time.Now().UnixMilli() + 3}, 2, 2, "Unknown", []int{0}},
-		{ArpEvent{net.ParseIP("0.0.0.0"), hpMac, time.Now().UnixMilli() + 4}, 3, 1, "Hewlett Packard", []int{0, 1, 3}},
-		{ArpEvent{net.ParseIP("169.254.10.20"), dellMac, time.Now().UnixMilli() + 5}, 4, 1, "Dell Inc.", []int{0, 1, 2}},
-		{ArpEvent{net.ParseIP("255.255.255.255"), unknownMac, time.Now().UnixMilli() + 6}, 5, 1, "Unknown", []int{0, 1, 4}},
+		{ArpEvent{net.ParseIP("192.168.1.100"), rpiMac, time.Now().UnixMilli() + 0}, 1, 1, "Raspberry Pi (Trading) Ltd", []EventType{NewPacket, NewHost}},
+		{ArpEvent{net.ParseIP("192.168.1.200"), unknownMac, time.Now().UnixMilli() + 1}, 2, 1, "Unknown", []EventType{NewPacket, NewHost}},
+		{ArpEvent{net.ParseIP("192.168.1.100"), rpiMac, time.Now().UnixMilli() + 2}, 2, 2, "Raspberry Pi (Trading) Ltd", []EventType{NewPacket}},
+		{ArpEvent{net.ParseIP("192.168.1.200"), unknownMac, time.Now().UnixMilli() + 3}, 2, 2, "Unknown", []EventType{NewPacket}},
+		{ArpEvent{net.ParseIP("0.0.0.0"), hpMac, time.Now().UnixMilli() + 4}, 3, 1, "Hewlett Packard", []EventType{NewPacket, NewHost, NewUnspecifiedPacket, NewUnspecifiedHost}},
+		{ArpEvent{net.ParseIP("169.254.10.20"), dellMac, time.Now().UnixMilli() + 5}, 4, 1, "Dell Inc.", []EventType{NewPacket, NewHost, NewLinkLocalUnicastPacket, NewLinkLocalUnicastPacket}},
+		{ArpEvent{net.ParseIP("255.255.255.255"), unknownMac, time.Now().UnixMilli() + 6}, 5, 1, "Unknown", []EventType{NewPacket, NewHost, NewBroadcastPacket, NewBroadcastHost}},
 	}
 
 	for i, e := range events {

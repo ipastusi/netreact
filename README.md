@@ -15,7 +15,7 @@ Once started, Netreact will passively listen to ARP traffic, and:
 - Update the user interface every time a new packet is received, unless you decided to disable the user interface using the `-u=false` flag.
 - Log to `netreact.log` using JSON Lines format. Log file name can be customised using the `-l` flag.
 - Create a separate event file in JSON format for each event. File names will match `netreact-<unix_timestamp>-<event_code>.json` pattern,
-  e.g. `netreact-1747995770259-0.json`. By default the files will be created in the working directory. However, you are encouraged to
+  e.g. `netreact-1747995770259-100.json`. By default the files will be created in the working directory. However, you are encouraged to
   specify a custom directory using the `-d` flag. See section below for more information about event files.
 
 ## Quick start guide
@@ -60,19 +60,25 @@ Examples:
 
 Netreact can generate the following types of events:
 
-| Event type                  | Event code |
-|-----------------------------|------------|
-| NEW_ARP_PACKET              | 0          |
-| NEW_HOST                    | 1          |
-| NEW_LINK_LOCAL_UNICAST_HOST | 2          |
-| NEW_UNSPECIFIED_HOST        | 3          |
-| NEW_BROADCAST_HOST          | 4          |
+| Event type                    | Event code |
+|-------------------------------|------------|
+| NEW_PACKET                    | 100        |
+| NEW_LINK_LOCAL_UNICAST_PACKET | 101        |
+| NEW_UNSPECIFIED_PACKET        | 102        |
+| NEW_BROADCAST_PACKET          | 103        |
+| NEW_HOST                      | 200        |
+| NEW_LINK_LOCAL_UNICAST_HOST   | 201        |
+| NEW_UNSPECIFIED_HOST          | 202        |
+| NEW_BROADCAST_HOST            | 203        |
 
-Format of `NEW_ARP_PACKET` event file:
+### Packet-related events
+
+Packet-related event types are triggered every time when a given packet is received. Event codes are 100-199.
+Format of packet-related event files (eventType will differ):
 
 ```json
 {
-  "eventType": "NEW_ARP_PACKET",
+  "eventType": "NEW_PACKET",
   "ip": "192.168.8.100",
   "mac": "f8:4e:73:2d:1c:8a",
   "firstTs": 1749464243156,
@@ -82,7 +88,10 @@ Format of `NEW_ARP_PACKET` event file:
 }
 ```
 
-Format of  `NEW_HOST`, `NEW_LINK_LOCAL_UNICAST_HOST`, `NEW_UNSPECIFIED_HOST` and `NEW_BROADCAST_HOST` event files, `eventType` will differ:
+### Host-related events
+
+Host-related event types will be triggered only once per host first time given packet is received. Event codes are 200-299.
+Format of packet-related event files (eventType will differ):
 
 ```json
 {
@@ -93,6 +102,8 @@ Format of  `NEW_HOST`, `NEW_LINK_LOCAL_UNICAST_HOST`, `NEW_UNSPECIFIED_HOST` and
   "macVendor": "Apple, Inc."
 }
 ```
+
+### Event details
 
 Event details:
 
@@ -116,9 +127,9 @@ On Linux you might want to use `inotifywait` to detect event file creation:
 ./netreact -i eth0 -d events
 
 inotifywait -qme close_write events/ --format %w%f | parallel -u echo
-events/netreact-1747995770259-0.json
-events/netreact-1747995770270-0.json
-events/netreact-1747995770292-0.json
+events/netreact-1747995770259-100.json
+events/netreact-1747995770270-100.json
+events/netreact-1747995770292-100.json
 ```
 
 On macOS you might want to use `fswatch`:
@@ -127,9 +138,9 @@ On macOS you might want to use `fswatch`:
 ./netreact -i en0 -d events
 
 fswatch --event Created events/ | xargs -n 1 -I _ echo _
-/path/to/netreact/events/netreact-1747995770294-0.json
-/path/to/netreact/events/netreact-1747995770336-0.json
-/path/to/netreact/events/netreact-1747995771602-0.json
+/path/to/netreact/events/netreact-1747995770294-100.json
+/path/to/netreact/events/netreact-1747995770336-100.json
+/path/to/netreact/events/netreact-1747995771602-100.json
 ```
 
 ## State file
