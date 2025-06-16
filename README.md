@@ -183,3 +183,4 @@ fswatch --event Created events/ | xargs -n 1 -I _ echo _
 - [ ] Exclusion files - optionally ignore selected IP, MAC or IP-MAC address combinations
 - [ ] Schema validation when loading a state file
 - [ ] Allow the user to sort the UI table
+- [ ] Automatic event file cleanup
