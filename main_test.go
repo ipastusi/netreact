@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -43,7 +44,7 @@ func Test_processArpEvents(t *testing.T) {
 	}
 
 	eventDir := filepath.Join(pwd, "events")
-	h := newArpEventHandler(nil, getLogHandler(t), eventDir, "1111", "1111")
+	h := newArpEventHandler(nil, getLogHandler(t), eventDir, "11111", "11111", "192.168.1.0/24")
 	cache := newCache()
 
 	rpiMac, _ := net.ParseMAC("2c:cf:67:0c:6c:a4")
@@ -63,8 +64,9 @@ func Test_processArpEvents(t *testing.T) {
 		{ArpEvent{net.ParseIP("192.168.1.100"), rpiMac, time.Now().UnixMilli() + 2}, 2, 2, "Raspberry Pi (Trading) Ltd", []EventType{NewPacket}},
 		{ArpEvent{net.ParseIP("192.168.1.200"), unknownMac, time.Now().UnixMilli() + 3}, 2, 2, "Unknown", []EventType{NewPacket}},
 		{ArpEvent{net.ParseIP("0.0.0.0"), hpMac, time.Now().UnixMilli() + 4}, 3, 1, "Hewlett Packard", []EventType{NewPacket, NewHost, NewUnspecifiedPacket, NewUnspecifiedHost}},
-		{ArpEvent{net.ParseIP("169.254.10.20"), dellMac, time.Now().UnixMilli() + 5}, 4, 1, "Dell Inc.", []EventType{NewPacket, NewHost, NewLinkLocalUnicastPacket, NewLinkLocalUnicastPacket}},
+		{ArpEvent{net.ParseIP("169.254.10.20"), dellMac, time.Now().UnixMilli() + 5}, 4, 1, "Dell Inc.", []EventType{NewPacket, NewHost, NewLinkLocalUnicastPacket, NewLinkLocalUnicastHost}},
 		{ArpEvent{net.ParseIP("255.255.255.255"), unknownMac, time.Now().UnixMilli() + 6}, 5, 1, "Unknown", []EventType{NewPacket, NewHost, NewBroadcastPacket, NewBroadcastHost}},
+		{ArpEvent{net.ParseIP("192.168.2.1"), unknownMac, time.Now().UnixMilli() + 7}, 6, 1, "Unknown", []EventType{NewPacket, NewHost, NewUnexpectedIpPacket, NewUnexpectedIpHost}},
 	}
 
 	for i, e := range events {
@@ -110,8 +112,21 @@ func Test_processArpEvents(t *testing.T) {
 		}
 
 		// check event files
-		for _, eventCode := range e.expectedEventCodes {
+		var allEventCodes []EventType
+		for i := 0; i < 5; i++ {
+			allEventCodes = append(allEventCodes, EventType(100+i), EventType(200+i))
+		}
+
+		for _, eventCode := range allEventCodes {
 			eventFileName := fmt.Sprintf("events/netreact-%v-%v.json", e.arpEvent.ts, eventCode)
+			if !slices.Contains(e.expectedEventCodes, eventCode) {
+				// we don't expect to find a file from outside of the pre-determined list of event types
+				if _, err := os.Stat(eventFileName); err == nil {
+					t.Fatal("unexpected event file exists:", eventFileName)
+				}
+				continue
+			}
+
 			eventFileBytes, err := os.ReadFile(eventFileName)
 			if err != nil {
 				t.Fatal("error reading event file:", err)

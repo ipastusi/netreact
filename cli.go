@@ -19,18 +19,20 @@ type CliFlags struct {
 	uiEnabled         bool
 	hostEventFilter   string
 	packetEventFilter string
+	expectedCidrRange string
 }
 
 func getCliFlags() (CliFlags, error) {
 	eventDir := flag.String("d", "", "directory where to store the event files, relative to the working directory, if provided (default working directory)")
 	filter := flag.String("f", "arp", "BPF filter, e.g. \"arp and src host not 0.0.0.0\"")
-	packetEventFilter := flag.String("fp", "1111", "packet event filter")
-	hostEventFilter := flag.String("fh", "1111", "host event filter")
+	packetEventFilter := flag.String("fp", "11111", "packet event filter")
+	hostEventFilter := flag.String("fh", "11111", "host event filter")
 	ifaceName := flag.String("i", "", "interface name, e.g. eth0")
 	logFileName := flag.String("l", "netreact.log", "log file")
 	promisc := flag.Bool("p", false, "put the interface in promiscuous mode (default false)")
 	stateFileName := flag.String("s", "", "state file (default none)")
 	ui := flag.Bool("u", true, "display textual user interface")
+	expectedCidrRange := flag.String("c", "0.0.0.0/0", "expected CIDR range")
 
 	flag.Parse()
 	flags := CliFlags{
@@ -43,6 +45,7 @@ func getCliFlags() (CliFlags, error) {
 		promiscMode:       *promisc,
 		stateFileName:     *stateFileName,
 		uiEnabled:         *ui,
+		expectedCidrRange: *expectedCidrRange,
 	}
 
 	err := processCliFlags(flags)
@@ -70,7 +73,7 @@ func processCliFlags(flags CliFlags) error {
 		flags.eventDir = absEventDirPath
 	}
 
-	if len(flags.packetEventFilter) != 4 {
+	if len(flags.packetEventFilter) != 5 {
 		return fmt.Errorf("incorrect length of packet event filter: %v", len(flags.packetEventFilter))
 	}
 	for i, char := range flags.packetEventFilter {
@@ -79,13 +82,19 @@ func processCliFlags(flags CliFlags) error {
 		}
 	}
 
-	if len(flags.hostEventFilter) != 4 {
+	if len(flags.hostEventFilter) != 5 {
 		return fmt.Errorf("incorrect length of host event filter: %v", len(flags.hostEventFilter))
 	}
 	for i, char := range flags.hostEventFilter {
 		if char != '0' && char != '1' {
 			return fmt.Errorf("invalid host event filter flag %v at position %v", char, i)
 		}
+	}
+
+	if ip, _, err := net.ParseCIDR(flags.expectedCidrRange); err != nil {
+		return fmt.Errorf("invalid expected CIDR range %v: %v", flags.expectedCidrRange, err)
+	} else if ip.To4() == nil {
+		return fmt.Errorf("expected CIDR range should be IPv4, got: %v", ip)
 	}
 
 	return nil

@@ -32,6 +32,8 @@ Help:
 ```
 ./netreact -h
 Usage of ./netreact:
+  -c string
+    	expected CIDR range (default "0.0.0.0/0")
   -d string
     	directory where to store the event files, relative to the working directory, if provided (default working directory)
   -f string
@@ -76,21 +78,23 @@ Netreact can generate the following types of events:
 
 | Event type                    | Event code | Packet event filter | Host event filter |
 |-------------------------------|------------|---------------------|-------------------|
-| NEW_PACKET                    | 100        | 1000                |                   |
-| NEW_LINK_LOCAL_UNICAST_PACKET | 101        | 0100                |                   |
-| NEW_UNSPECIFIED_PACKET        | 102        | 0010                |                   |
-| NEW_BROADCAST_PACKET          | 103        | 0001                |                   |
-| NEW_HOST                      | 200        |                     | 1000              |
-| NEW_LINK_LOCAL_UNICAST_HOST   | 201        |                     | 0100              |
-| NEW_UNSPECIFIED_HOST          | 202        |                     | 0010              |
-| NEW_BROADCAST_HOST            | 203        |                     | 0001              |
+| NEW_PACKET                    | 100        | 10000               |                   |
+| NEW_LINK_LOCAL_UNICAST_PACKET | 101        | 01000               |                   |
+| NEW_UNSPECIFIED_PACKET        | 102        | 00100               |                   |
+| NEW_BROADCAST_PACKET          | 103        | 00010               |                   |
+| NEW_UNEXPECTED_IP_PACKET      | 104        | 00001               |                   |
+| NEW_HOST                      | 200        |                     | 10000             |
+| NEW_LINK_LOCAL_UNICAST_HOST   | 201        |                     | 01000             |
+| NEW_UNSPECIFIED_HOST          | 202        |                     | 00100             |
+| NEW_BROADCAST_HOST            | 203        |                     | 00010             |
+| NEW_UNEXPECTED_IP_HOST        | 204        |                     | 00001             |
 
 Event codes are used in generated filenames only.
 
 Use `-fp` and `-fh` flags to produce event files for selected event types only, e.g.:
 
 ```
--fp '0000' -fh '1100'
+-fp '00000' -fh '11000'
 ```
 
 The above configuration will prevent Netreact from emiting any packet-related events, while emiting only `NEW_HOST` and
@@ -98,7 +102,7 @@ The above configuration will prevent Netreact from emiting any packet-related ev
 
 ### Packet-related events
 
-Packet-related event types are triggered every time when a given packet is received. Event codes are 100-103.
+Packet-related event types are triggered every time when a given packet is received. Event codes are 1xx.
 Format of packet-related event files (eventType will differ):
 
 ```json
@@ -109,13 +113,14 @@ Format of packet-related event files (eventType will differ):
   "firstTs": 1749464243156,
   "ts": 1749464246164,
   "count": 5,
-  "macVendor": "Apple, Inc."
+  "macVendor": "Apple, Inc.",
+  "expectedCidrRange": "0.0.0.0/0"
 }
 ```
 
 ### Host-related events
 
-Host-related event types will be triggered only once per host first time given packet is received. Event codes are 200-203.
+Host-related event types will be triggered only once per host first time given packet is received. Event codes are 2xx.
 Format of packet-related event files (eventType will differ):
 
 ```json
@@ -124,22 +129,23 @@ Format of packet-related event files (eventType will differ):
   "ip": "192.168.8.100",
   "mac": "f8:4e:73:2d:1c:8a",
   "ts": 1749464246164,
-  "macVendor": "Apple, Inc."
+  "macVendor": "Apple, Inc.",
+  "expectedCidrRange": "0.0.0.0/0"
 }
 ```
 
 ### Event details
 
-Event details:
+Event details will depend on the event type:
 
 - `eventType` - One of the supported event types.
 - `ip` - ARP packet source IP address.
 - `mac` - ARP packet source MAC address.
-- `firstTs` - Unix timestamp of when this IP-MAC combination was first seen, in milliseconds. It will be the same as the current timestamp
-  if the count is equal to 1.
+- `firstTs` - Unix timestamp of when this IP-MAC combination was first seen, in milliseconds.
 - `ts` - Unix timestamp of when the ARP packet was received, in milliseconds.
 - `count` - Number of packets with this IP-MAC combination seen so far.
 - `macVendor` - Vendor name for the MAC address OUI. `Unknown` if not found.
+- `expectedCidrRange` - Expected CIDR range.
 
 ## Event handling
 
@@ -177,7 +183,7 @@ fswatch --event Created events/ | xargs -n 1 -I _ echo _
 - [x] New event type - 0.0.0.0 source IP address
 - [x] New event type - 255.255.255.255 source IP address
 - [x] Event type filters
-- [ ] New event type - unexpected source IP address
+- [x] New event type - unexpected source IP address
 - [ ] New event type - new IP address for the same MAC
 - [ ] New event type - new MAC address for the same IP
 - [ ] Exclusion files - optionally ignore selected IP, MAC or IP-MAC address combinations
