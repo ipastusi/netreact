@@ -44,13 +44,20 @@ func Test_processArpEvents(t *testing.T) {
 	}
 
 	eventDir := filepath.Join(pwd, "events")
-	h := newArpEventHandler(nil, getLogHandler(t), eventDir, "11111", "11111", "192.168.1.0/24")
-	cache := newCache()
 
 	rpiMac, _ := net.ParseMAC("2c:cf:67:0c:6c:a4")
 	unknownMac, _ := net.ParseMAC("31:0c:8a:cb:8f:ab")
+	excludedMac, _ := net.ParseMAC("31:0c:8a:00:00:02")
 	hpMac, _ := net.ParseMAC("b4:b6:86:01:02:03")
 	dellMac, _ := net.ParseMAC("f8:bc:12:01:02:03")
+
+	excludedIPs := map[string]bool{"192.168.1.111": true}
+	excludedMACs := map[string]bool{"31:0c:8a:00:00:01": true}
+	excludedPairs := map[string]bool{"192.168.1.112,31:0c:8a:00:00:02": true}
+	filter := newArpEventFilter(excludedIPs, excludedMACs, excludedPairs)
+
+	handler := newArpEventHandler(nil, getLogHandler(t), eventDir, "11111", "11111", "192.168.1.0/24")
+	cache := newCache()
 
 	events := []struct {
 		arpEvent           ArpEvent
@@ -58,20 +65,24 @@ func Test_processArpEvents(t *testing.T) {
 		expectedCount      int
 		expectedMacVendor  string
 		expectedEventCodes []EventType
+		excluded           bool
 	}{
-		{ArpEvent{net.ParseIP("192.168.1.100"), rpiMac, time.Now().UnixMilli() + 0}, 1, 1, "Raspberry Pi (Trading) Ltd", []EventType{NewPacket, NewHost}},
-		{ArpEvent{net.ParseIP("192.168.1.200"), unknownMac, time.Now().UnixMilli() + 1}, 2, 1, "Unknown", []EventType{NewPacket, NewHost}},
-		{ArpEvent{net.ParseIP("192.168.1.100"), rpiMac, time.Now().UnixMilli() + 2}, 2, 2, "Raspberry Pi (Trading) Ltd", []EventType{NewPacket}},
-		{ArpEvent{net.ParseIP("192.168.1.200"), unknownMac, time.Now().UnixMilli() + 3}, 2, 2, "Unknown", []EventType{NewPacket}},
-		{ArpEvent{net.ParseIP("0.0.0.0"), hpMac, time.Now().UnixMilli() + 4}, 3, 1, "Hewlett Packard", []EventType{NewPacket, NewHost, NewUnspecifiedPacket, NewUnspecifiedHost}},
-		{ArpEvent{net.ParseIP("169.254.10.20"), dellMac, time.Now().UnixMilli() + 5}, 4, 1, "Dell Inc.", []EventType{NewPacket, NewHost, NewLinkLocalUnicastPacket, NewLinkLocalUnicastHost}},
-		{ArpEvent{net.ParseIP("255.255.255.255"), unknownMac, time.Now().UnixMilli() + 6}, 5, 1, "Unknown", []EventType{NewPacket, NewHost, NewBroadcastPacket, NewBroadcastHost}},
-		{ArpEvent{net.ParseIP("192.168.2.1"), unknownMac, time.Now().UnixMilli() + 7}, 6, 1, "Unknown", []EventType{NewPacket, NewHost, NewUnexpectedIpPacket, NewUnexpectedIpHost}},
+		{ArpEvent{net.ParseIP("192.168.1.100"), rpiMac, time.Now().UnixMilli() + 0}, 1, 1, "Raspberry Pi (Trading) Ltd", []EventType{NewPacket, NewHost}, false},
+		{ArpEvent{net.ParseIP("192.168.1.200"), unknownMac, time.Now().UnixMilli() + 1}, 2, 1, "Unknown", []EventType{NewPacket, NewHost}, false},
+		{ArpEvent{net.ParseIP("192.168.1.100"), rpiMac, time.Now().UnixMilli() + 2}, 2, 2, "Raspberry Pi (Trading) Ltd", []EventType{NewPacket}, false},
+		{ArpEvent{net.ParseIP("192.168.1.200"), unknownMac, time.Now().UnixMilli() + 3}, 2, 2, "Unknown", []EventType{NewPacket}, false},
+		{ArpEvent{net.ParseIP("0.0.0.0"), hpMac, time.Now().UnixMilli() + 4}, 3, 1, "Hewlett Packard", []EventType{NewPacket, NewHost, NewUnspecifiedPacket, NewUnspecifiedHost}, false},
+		{ArpEvent{net.ParseIP("169.254.10.20"), dellMac, time.Now().UnixMilli() + 5}, 4, 1, "Dell Inc.", []EventType{NewPacket, NewHost, NewLinkLocalUnicastPacket, NewLinkLocalUnicastHost}, false},
+		{ArpEvent{net.ParseIP("255.255.255.255"), unknownMac, time.Now().UnixMilli() + 6}, 5, 1, "Unknown", []EventType{NewPacket, NewHost, NewBroadcastPacket, NewBroadcastHost}, false},
+		{ArpEvent{net.ParseIP("192.168.2.1"), unknownMac, time.Now().UnixMilli() + 7}, 6, 1, "Unknown", []EventType{NewPacket, NewHost, NewUnexpectedIpPacket, NewUnexpectedIpHost}, false},
+		{ArpEvent{net.ParseIP("192.168.1.111"), unknownMac, time.Now().UnixMilli() + 8}, 6, 0, "Unknown", []EventType{}, true},
+		{ArpEvent{net.ParseIP("192.168.1.111"), excludedMac, time.Now().UnixMilli() + 9}, 6, 0, "Unknown", []EventType{}, true},
+		{ArpEvent{net.ParseIP("192.168.1.112"), excludedMac, time.Now().UnixMilli() + 10}, 6, 0, "Unknown", []EventType{}, true},
 	}
 
 	for i, e := range events {
 		// process test event
-		processArpEvent(e.arpEvent, cache, h)
+		processArpEvent(e.arpEvent, cache, filter, handler)
 
 		// cache checks
 		cacheSize := len(cache.Items)
@@ -79,8 +90,21 @@ func Test_processArpEvents(t *testing.T) {
 			t.Fatalf("unexpected cache size, expected: %v, got: %v", cacheSize, e.expectedCacheSize)
 		}
 
-		// check timestamps
+		// excluded entries
 		value := cache.get(e.arpEvent)
+		if e.excluded {
+			if value.Count != 0 || value.FirstTs != 0 || value.LastTs != 0 {
+				t.Fatalf("unexpected values for excluded entry, count: %v, first: %v, last: %v", value.Count, value.FirstTs, value.LastTs)
+			}
+			continue
+		}
+
+		// count checks
+		if value.Count != e.expectedCount {
+			t.Fatalf("unexpected event count, expected: %v, got: %v", value.Count, e.expectedCount)
+		}
+
+		// check timestamps
 		if e.expectedCount == 1 {
 			if value.FirstTs != value.LastTs {
 				t.Fatalf("unexpected timestamp difference, first: %v, last: %v", value.FirstTs, value.LastTs)

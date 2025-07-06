@@ -37,6 +37,11 @@ func Test_processCliFlags(t *testing.T) {
 		{"invalid iface", CliFlags{ifaceName: "eth99", promiscMode: false, packetEventFilter: "11111", hostEventFilter: "11111"}, false},
 		{"expected cidr range rfc 1918", CliFlags{ifaceName: validIface.Name, packetEventFilter: "11111", hostEventFilter: "11111", expectedCidrRange: "10.0.0.0/16"}, true},
 		{"expected cidr range ipv6", CliFlags{ifaceName: validIface.Name, packetEventFilter: "11111", hostEventFilter: "11111", expectedCidrRange: "2001:db8::/32"}, false},
+		{"invalid cidr range 1", CliFlags{ifaceName: validIface.Name, packetEventFilter: "11111", hostEventFilter: "11111", expectedCidrRange: "0.0.0.0/33"}, false},
+		{"invalid cidr range 2", CliFlags{ifaceName: validIface.Name, packetEventFilter: "11111", hostEventFilter: "11111", expectedCidrRange: "invalid"}, false},
+		{"nonexistent ip exclude file", CliFlags{ifaceName: validIface.Name, packetEventFilter: "11111", hostEventFilter: "11111", expectedCidrRange: "0.0.0.0/0", excludeIPs: "nonexistent"}, false},
+		{"nonexistent mac exclude file", CliFlags{ifaceName: validIface.Name, packetEventFilter: "11111", hostEventFilter: "11111", expectedCidrRange: "0.0.0.0/0", excludeMACs: "nonexistent"}, false},
+		{"nonexistent ip-mac exclude file", CliFlags{ifaceName: validIface.Name, packetEventFilter: "11111", hostEventFilter: "11111", expectedCidrRange: "0.0.0.0/0", excludePairs: "nonexistent"}, false},
 	}
 
 	for _, d := range data {

@@ -66,6 +66,27 @@ func main() {
 		go handleSignals(sig, cache, stateFileName)
 	}
 
+	var excludeIPs, excludeMACs, excludePairs map[string]bool
+	if flags.excludeIPs != "" {
+		data, err := os.ReadFile(flags.excludeIPs)
+		exitOnError(err)
+		excludeIPs, err = readIPs(string(data))
+		exitOnError(err)
+	}
+	if flags.excludeMACs != "" {
+		data, err := os.ReadFile(flags.excludeMACs)
+		exitOnError(err)
+		excludeMACs, err = readMACs(string(data))
+		exitOnError(err)
+	}
+	if flags.excludePairs != "" {
+		data, err := os.ReadFile(flags.excludePairs)
+		exitOnError(err)
+		excludePairs, err = readPairs(string(data))
+		exitOnError(err)
+	}
+	filter := newArpEventFilter(excludeIPs, excludeMACs, excludePairs)
+
 	command := flags.eventDir
 	packetEventFilter := flags.packetEventFilter
 	hostEventFilter := flags.hostEventFilter
@@ -88,7 +109,7 @@ func main() {
 				mac: net.HardwareAddr(arp.SourceHwAddress),
 				ts:  time.Now().UnixMilli(),
 			}
-			processArpEvent(arpEvent, cache, handler)
+			processArpEvent(arpEvent, cache, filter, handler)
 		}
 	}
 }
@@ -110,7 +131,10 @@ func handleSignals(sig chan os.Signal, cache Cache, stateFileName string) {
 	os.Exit(0)
 }
 
-func processArpEvent(arpEvent ArpEvent, cache Cache, handler ArpEventHandler) {
+func processArpEvent(arpEvent ArpEvent, cache Cache, filter ArpEventFilter, handler ArpEventHandler) {
+	if filter.isExcluded(arpEvent.ip.String(), arpEvent.mac.String()) {
+		return
+	}
 	extArpEvent := cache.update(arpEvent)
 	handler.handle(extArpEvent)
 }

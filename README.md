@@ -36,12 +36,18 @@ Usage of ./netreact:
     	expected CIDR range (default "0.0.0.0/0")
   -d string
     	directory where to store the event files, relative to the working directory, if provided (default working directory)
+  -ei string
+    	file with excluded IP addresses
+  -em string
+    	file with excluded MAC addresses
+  -ep string
+    	file with excluded IP-MAC address pairs
   -f string
     	BPF filter, e.g. "arp and src host not 0.0.0.0" (default "arp")
   -fh string
-    	host event filter (default "1111")
+    	host event filter (default "11111")
   -fp string
-    	packet event filter (default "1111")
+    	packet event filter (default "11111")
   -i string
     	interface name, e.g. eth0
   -l string
@@ -176,17 +182,7 @@ fswatch --event Created events/ | xargs -n 1 -I _ echo _
 
 ## TODO
 
-- [x] MAC vendor detection
-- [x] State file - optionally save the current state to a state file on exit and load when starting next time
-- [x] New event type - new host detected
-- [x] New event type - link-local unicast source IP address (169.254.0.0/16)
-- [x] New event type - 0.0.0.0 source IP address
-- [x] New event type - 255.255.255.255 source IP address
-- [x] Event type filters
-- [x] New event type - unexpected source IP address
 - [ ] New event type - new IP address for the same MAC
 - [ ] New event type - new MAC address for the same IP
-- [ ] Exclusion files - optionally ignore selected IP, MAC or IP-MAC address combinations
 - [ ] Schema validation when loading a state file
-- [ ] Allow the user to sort the UI table
 - [ ] Automatic event file cleanup

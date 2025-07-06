@@ -20,6 +20,9 @@ type CliFlags struct {
 	hostEventFilter   string
 	packetEventFilter string
 	expectedCidrRange string
+	excludeIPs        string
+	excludeMACs       string
+	excludePairs      string
 }
 
 func getCliFlags() (CliFlags, error) {
@@ -33,6 +36,9 @@ func getCliFlags() (CliFlags, error) {
 	stateFileName := flag.String("s", "", "state file (default none)")
 	ui := flag.Bool("u", true, "display textual user interface")
 	expectedCidrRange := flag.String("c", "0.0.0.0/0", "expected CIDR range")
+	excludeIPs := flag.String("ei", "", "file with excluded IP addresses")
+	excludeMACs := flag.String("em", "", "file with excluded MAC addresses")
+	excludePairs := flag.String("ep", "", "file with excluded IP-MAC address pairs")
 
 	flag.Parse()
 	flags := CliFlags{
@@ -46,6 +52,9 @@ func getCliFlags() (CliFlags, error) {
 		stateFileName:     *stateFileName,
 		uiEnabled:         *ui,
 		expectedCidrRange: *expectedCidrRange,
+		excludeIPs:        *excludeIPs,
+		excludeMACs:       *excludeMACs,
+		excludePairs:      *excludePairs,
 	}
 
 	err := processCliFlags(flags)
@@ -95,6 +104,15 @@ func processCliFlags(flags CliFlags) error {
 		return fmt.Errorf("invalid expected CIDR range %v: %v", flags.expectedCidrRange, err)
 	} else if ip.To4() == nil {
 		return fmt.Errorf("expected CIDR range should be IPv4, got: %v", ip)
+	}
+
+	excludeFiles := []string{flags.excludeIPs, flags.excludeMACs, flags.excludePairs}
+	for _, excludeFile := range excludeFiles {
+		if excludeFile != "" {
+			if _, err := os.Stat(excludeFile); err != nil {
+				return fmt.Errorf("file does not exist: %v", excludeFile)
+			}
+		}
 	}
 
 	return nil

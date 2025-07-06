@@ -2,4 +2,7 @@
 oui_scripts/
 *.json
 *.log
+ips.txt
+macs.txt
 netreact
+pairs.txt
