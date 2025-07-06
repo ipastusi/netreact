@@ -20,11 +20,15 @@ const (
 	NewUnspecifiedPacket      EventType = 102
 	NewBroadcastPacket        EventType = 103
 	NewUnexpectedIpPacket     EventType = 104
+	NewIpForMacPacket         EventType = 105
+	NewMacForIpPacket         EventType = 106
 	NewHost                   EventType = 200
 	NewLinkLocalUnicastHost   EventType = 201
 	NewUnspecifiedHost        EventType = 202
 	NewBroadcastHost          EventType = 203
 	NewUnexpectedIpHost       EventType = 204
+	NewIpForMacHost           EventType = 205
+	NewMacForIpHost           EventType = 206
 )
 
 func (e EventType) describe() string {
@@ -39,6 +43,10 @@ func (e EventType) describe() string {
 		return "NEW_BROADCAST_PACKET"
 	case NewUnexpectedIpPacket:
 		return "NEW_UNEXPECTED_IP_PACKET"
+	case NewIpForMacPacket:
+		return "NEW_IP_FOR_MAC_PACKET"
+	case NewMacForIpPacket:
+		return "NEW_MAC_FOR_IP_PACKET"
 	case NewHost:
 		return "NEW_HOST"
 	case NewLinkLocalUnicastHost:
@@ -49,6 +57,10 @@ func (e EventType) describe() string {
 		return "NEW_BROADCAST_HOST"
 	case NewUnexpectedIpHost:
 		return "NEW_UNEXPECTED_IP_HOST"
+	case NewIpForMacHost:
+		return "NEW_IP_FOR_MAC_HOST"
+	case NewMacForIpHost:
+		return "NEW_MAC_FOR_IP_HOST"
 	default:
 		return "UNKNOWN"
 	}
@@ -71,7 +83,7 @@ type ExtendedArpEvent struct {
 	macVendor string
 }
 
-func (e ExtendedArpEvent) toNewPacketJson(eventType EventType, expectedCidrRange string) EventJson {
+func (e ExtendedArpEvent) toNewPacketJson(eventType EventType, expectedCidrRange string, otherIps []string, otherMacs []string) EventJson {
 	return EventJson{
 		EventType:         eventType.describe(),
 		Ip:                e.ip.String(),
@@ -81,10 +93,12 @@ func (e ExtendedArpEvent) toNewPacketJson(eventType EventType, expectedCidrRange
 		Count:             e.count,
 		MacVendor:         e.macVendor,
 		ExpectedCidrRange: expectedCidrRange,
+		OtherIps:          otherIps,
+		OtherMacs:         otherMacs,
 	}
 }
 
-func (e ExtendedArpEvent) toNewHostJson(eventType EventType, expectedCidrRange string) EventJson {
+func (e ExtendedArpEvent) toNewHostJson(eventType EventType, expectedCidrRange string, otherIps []string, otherMacs []string) EventJson {
 	return EventJson{
 		EventType:         eventType.describe(),
 		Ip:                e.ip.String(),
@@ -92,6 +106,8 @@ func (e ExtendedArpEvent) toNewHostJson(eventType EventType, expectedCidrRange s
 		Ts:                e.ts,
 		MacVendor:         e.macVendor,
 		ExpectedCidrRange: expectedCidrRange,
+		OtherIps:          otherIps,
+		OtherMacs:         otherMacs,
 	}
 }
 
@@ -104,10 +120,22 @@ type ArpEventHandler struct {
 	packetEventFilter string
 	hostEventFilter   string
 	expectedCidrRange *net.IPNet
+	ipToMac           map[string]map[string]bool
+	macToIp           map[string]map[string]bool
 }
 
-func newArpEventHandler(uiApp *UIApp, logHandler slog.Handler, eventDir string, packetEventFilter string, hostEventFilter string, expectedCidrRange string) ArpEventHandler {
+func newArpEventHandler(
+	uiApp *UIApp,
+	logHandler slog.Handler,
+	eventDir string,
+	packetEventFilter string,
+	hostEventFilter string,
+	expectedCidrRange string,
+	cache Cache) ArpEventHandler {
+
 	_, cidrRange, _ := net.ParseCIDR(expectedCidrRange)
+	ipToMac, macToIp := cache.getIpAndMacMaps()
+
 	return ArpEventHandler{
 		uiApp:             uiApp,
 		logHandler:        logHandler,
@@ -115,14 +143,53 @@ func newArpEventHandler(uiApp *UIApp, logHandler slog.Handler, eventDir string, 
 		packetEventFilter: packetEventFilter,
 		hostEventFilter:   hostEventFilter,
 		expectedCidrRange: cidrRange,
+		ipToMac:           ipToMac,
+		macToIp:           macToIp,
 	}
 }
 
 func (h ArpEventHandler) handle(extArpEvent ExtendedArpEvent) {
+	h.updateMaps(extArpEvent)
 	h.lookupMacVendor(&extArpEvent)
 	h.handleUI(extArpEvent)
 	h.handleLog(extArpEvent)
 	h.handleEventFiles(extArpEvent)
+}
+
+func (h ArpEventHandler) updateMaps(extArpEvent ExtendedArpEvent) {
+	ip, mac := extArpEvent.ip.String(), extArpEvent.mac.String()
+
+	if _, ok := h.ipToMac[ip]; !ok {
+		h.ipToMac[ip] = map[string]bool{}
+	}
+	h.ipToMac[ip][mac] = true
+
+	if _, ok := h.macToIp[mac]; !ok {
+		h.macToIp[mac] = map[string]bool{}
+	}
+	h.macToIp[mac][ip] = true
+}
+
+func (h ArpEventHandler) getOtherIps(extArpEvent ExtendedArpEvent) []string {
+	all := h.macToIp[extArpEvent.mac.String()]
+	var other []string
+	for ip := range all {
+		if ip != extArpEvent.ip.String() {
+			other = append(other, ip)
+		}
+	}
+	return other
+}
+
+func (h ArpEventHandler) getOtherMacs(extArpEvent ExtendedArpEvent) []string {
+	all := h.ipToMac[extArpEvent.ip.String()]
+	var other []string
+	for mac := range all {
+		if mac != extArpEvent.mac.String() {
+			other = append(other, mac)
+		}
+	}
+	return other
 }
 
 func (h ArpEventHandler) lookupMacVendor(extArpEvent *ExtendedArpEvent) {
@@ -193,17 +260,37 @@ func (h ArpEventHandler) handleEventFiles(extArpEvent ExtendedArpEvent) {
 			h.handleNewHostEventFile(extArpEvent, NewUnexpectedIpHost)
 		}
 	}
+
+	if len(h.macToIp[extArpEvent.mac.String()]) > 1 {
+		if h.packetEventFilter[5] == '1' {
+			h.handleNewPacketEventFile(extArpEvent, NewIpForMacPacket)
+		}
+		if h.hostEventFilter[5] == '1' {
+			h.handleNewHostEventFile(extArpEvent, NewIpForMacHost)
+		}
+	}
+
+	if len(h.ipToMac[extArpEvent.ip.String()]) > 1 {
+		if h.packetEventFilter[6] == '1' {
+			h.handleNewPacketEventFile(extArpEvent, NewMacForIpPacket)
+		}
+		if h.hostEventFilter[6] == '1' {
+			h.handleNewHostEventFile(extArpEvent, NewMacForIpHost)
+		}
+	}
 }
 
 func (h ArpEventHandler) handleNewPacketEventFile(extArpEvent ExtendedArpEvent, eventType EventType) {
 	expectedCidrRange := h.expectedCidrRange.String()
-	eventJson := extArpEvent.toNewPacketJson(eventType, expectedCidrRange)
+	otherIps, otherMacs := h.getOtherIps(extArpEvent), h.getOtherMacs(extArpEvent)
+	eventJson := extArpEvent.toNewPacketJson(eventType, expectedCidrRange, otherIps, otherMacs)
 	h.storeEventFile(eventJson, eventType)
 }
 
 func (h ArpEventHandler) handleNewHostEventFile(extArpEvent ExtendedArpEvent, eventType EventType) {
 	expectedCidrRange := h.expectedCidrRange.String()
-	eventJson := extArpEvent.toNewHostJson(eventType, expectedCidrRange)
+	otherIps, otherMacs := h.getOtherIps(extArpEvent), h.getOtherMacs(extArpEvent)
+	eventJson := extArpEvent.toNewHostJson(eventType, expectedCidrRange, otherIps, otherMacs)
 	h.storeEventFile(eventJson, eventType)
 }
 
@@ -232,12 +319,14 @@ func (h ArpEventHandler) logError(err error) {
 type EventJson struct {
 	// IP and MAC addresses are stored as strings due to:
 	// https://github.com/golang/go/issues/29678
-	EventType         string `json:"eventType"`
-	Ip                string `json:"ip"`
-	Mac               string `json:"mac"`
-	FirstTs           int64  `json:"firstTs,omitempty"`
-	Ts                int64  `json:"ts"`
-	Count             int    `json:"count,omitempty"`
-	MacVendor         string `json:"macVendor"`
-	ExpectedCidrRange string `json:"expectedCidrRange"`
+	EventType         string   `json:"eventType"`
+	Ip                string   `json:"ip"`
+	Mac               string   `json:"mac"`
+	FirstTs           int64    `json:"firstTs,omitempty"`
+	Ts                int64    `json:"ts"`
+	Count             int      `json:"count,omitempty"`
+	MacVendor         string   `json:"macVendor"`
+	ExpectedCidrRange string   `json:"expectedCidrRange"`
+	OtherIps          []string `json:"otherIps,omitempty"`
+	OtherMacs         []string `json:"otherMacs,omitempty"`
 }

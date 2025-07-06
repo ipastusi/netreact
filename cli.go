@@ -28,8 +28,8 @@ type CliFlags struct {
 func getCliFlags() (CliFlags, error) {
 	eventDir := flag.String("d", "", "directory where to store the event files, relative to the working directory, if provided (default working directory)")
 	filter := flag.String("f", "arp", "BPF filter, e.g. \"arp and src host not 0.0.0.0\"")
-	packetEventFilter := flag.String("fp", "11111", "packet event filter")
-	hostEventFilter := flag.String("fh", "11111", "host event filter")
+	packetEventFilter := flag.String("fp", "1111111", "packet event filter")
+	hostEventFilter := flag.String("fh", "1111111", "host event filter")
 	ifaceName := flag.String("i", "", "interface name, e.g. eth0")
 	logFileName := flag.String("l", "netreact.log", "log file")
 	promisc := flag.Bool("p", false, "put the interface in promiscuous mode (default false)")
@@ -82,7 +82,7 @@ func processCliFlags(flags CliFlags) error {
 		flags.eventDir = absEventDirPath
 	}
 
-	if len(flags.packetEventFilter) != 5 {
+	if len(flags.packetEventFilter) != 7 {
 		return fmt.Errorf("incorrect length of packet event filter: %v", len(flags.packetEventFilter))
 	}
 	for i, char := range flags.packetEventFilter {
@@ -91,7 +91,7 @@ func processCliFlags(flags CliFlags) error {
 		}
 	}
 
-	if len(flags.hostEventFilter) != 5 {
+	if len(flags.hostEventFilter) != 7 {
 		return fmt.Errorf("incorrect length of host event filter: %v", len(flags.hostEventFilter))
 	}
 	for i, char := range flags.hostEventFilter {

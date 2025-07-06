@@ -49,6 +49,7 @@ func Test_processArpEvents(t *testing.T) {
 	unknownMac, _ := net.ParseMAC("31:0c:8a:cb:8f:ab")
 	excludedMac, _ := net.ParseMAC("31:0c:8a:00:00:02")
 	hpMac, _ := net.ParseMAC("b4:b6:86:01:02:03")
+	hpMac2, _ := net.ParseMAC("b4:b6:86:01:02:04")
 	dellMac, _ := net.ParseMAC("f8:bc:12:01:02:03")
 
 	excludedIPs := map[string]bool{"192.168.1.111": true}
@@ -56,8 +57,8 @@ func Test_processArpEvents(t *testing.T) {
 	excludedPairs := map[string]bool{"192.168.1.112,31:0c:8a:00:00:02": true}
 	filter := newArpEventFilter(excludedIPs, excludedMACs, excludedPairs)
 
-	handler := newArpEventHandler(nil, getLogHandler(t), eventDir, "11111", "11111", "192.168.1.0/24")
 	cache := newCache()
+	handler := newArpEventHandler(nil, getLogHandler(t), eventDir, "1111111", "1111111", "192.168.1.0/24", cache)
 
 	events := []struct {
 		arpEvent           ArpEvent
@@ -73,11 +74,12 @@ func Test_processArpEvents(t *testing.T) {
 		{ArpEvent{net.ParseIP("192.168.1.200"), unknownMac, time.Now().UnixMilli() + 3}, 2, 2, "Unknown", []EventType{NewPacket}, false},
 		{ArpEvent{net.ParseIP("0.0.0.0"), hpMac, time.Now().UnixMilli() + 4}, 3, 1, "Hewlett Packard", []EventType{NewPacket, NewHost, NewUnspecifiedPacket, NewUnspecifiedHost}, false},
 		{ArpEvent{net.ParseIP("169.254.10.20"), dellMac, time.Now().UnixMilli() + 5}, 4, 1, "Dell Inc.", []EventType{NewPacket, NewHost, NewLinkLocalUnicastPacket, NewLinkLocalUnicastHost}, false},
-		{ArpEvent{net.ParseIP("255.255.255.255"), unknownMac, time.Now().UnixMilli() + 6}, 5, 1, "Unknown", []EventType{NewPacket, NewHost, NewBroadcastPacket, NewBroadcastHost}, false},
-		{ArpEvent{net.ParseIP("192.168.2.1"), unknownMac, time.Now().UnixMilli() + 7}, 6, 1, "Unknown", []EventType{NewPacket, NewHost, NewUnexpectedIpPacket, NewUnexpectedIpHost}, false},
-		{ArpEvent{net.ParseIP("192.168.1.111"), unknownMac, time.Now().UnixMilli() + 8}, 6, 0, "Unknown", []EventType{}, true},
-		{ArpEvent{net.ParseIP("192.168.1.111"), excludedMac, time.Now().UnixMilli() + 9}, 6, 0, "Unknown", []EventType{}, true},
-		{ArpEvent{net.ParseIP("192.168.1.112"), excludedMac, time.Now().UnixMilli() + 10}, 6, 0, "Unknown", []EventType{}, true},
+		{ArpEvent{net.ParseIP("255.255.255.255"), unknownMac, time.Now().UnixMilli() + 6}, 5, 1, "Unknown", []EventType{NewPacket, NewHost, NewBroadcastPacket, NewBroadcastHost, NewIpForMacPacket, NewIpForMacHost}, false},
+		{ArpEvent{net.ParseIP("192.168.2.1"), unknownMac, time.Now().UnixMilli() + 7}, 6, 1, "Unknown", []EventType{NewPacket, NewHost, NewUnexpectedIpPacket, NewUnexpectedIpHost, NewIpForMacPacket, NewIpForMacHost}, false},
+		{ArpEvent{net.ParseIP("0.0.0.0"), hpMac2, time.Now().UnixMilli() + 8}, 7, 1, "Hewlett Packard", []EventType{NewPacket, NewHost, NewUnspecifiedPacket, NewUnspecifiedHost, NewMacForIpPacket, NewMacForIpHost}, false},
+		{ArpEvent{net.ParseIP("192.168.1.111"), unknownMac, time.Now().UnixMilli() + 9}, 7, 0, "Unknown", []EventType{}, true},
+		{ArpEvent{net.ParseIP("192.168.1.111"), excludedMac, time.Now().UnixMilli() + 10}, 7, 0, "Unknown", []EventType{}, true},
+		{ArpEvent{net.ParseIP("192.168.1.112"), excludedMac, time.Now().UnixMilli() + 11}, 7, 0, "Unknown", []EventType{}, true},
 	}
 
 	for i, e := range events {
@@ -137,7 +139,7 @@ func Test_processArpEvents(t *testing.T) {
 
 		// check event files
 		var allEventCodes []EventType
-		for i := 0; i < 5; i++ {
+		for i := 0; i < len(handler.packetEventFilter); i++ {
 			allEventCodes = append(allEventCodes, EventType(100+i), EventType(200+i))
 		}
 
@@ -145,7 +147,7 @@ func Test_processArpEvents(t *testing.T) {
 			eventFileName := fmt.Sprintf("events/netreact-%v-%v.json", e.arpEvent.ts, eventCode)
 			if !slices.Contains(e.expectedEventCodes, eventCode) {
 				// we don't expect to find a file from outside of the pre-determined list of event types
-				if _, err := os.Stat(eventFileName); err == nil {
+				if _, err = os.Stat(eventFileName); err == nil {
 					t.Fatal("unexpected event file exists:", eventFileName)
 				}
 				continue

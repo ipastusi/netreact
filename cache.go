@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/hex"
 	"encoding/json"
+	"net"
 )
 
 // cache key
@@ -48,6 +49,29 @@ func cacheFromJson(data []byte) (Cache, error) {
 	cache := newCache()
 	err := json.Unmarshal(data, &cache)
 	return cache, err
+}
+
+func (c *Cache) getIpAndMacMaps() (map[string]map[string]bool, map[string]map[string]bool) {
+	ipToMac := map[string]map[string]bool{}
+	macToIp := map[string]map[string]bool{}
+
+	for key := range c.Items {
+		ipBytes, macBytes := key[:4], key[4:]
+		ip := net.IP(ipBytes).String()
+		mac := net.HardwareAddr(macBytes).String()
+
+		if _, ok := ipToMac[ip]; !ok {
+			ipToMac[ip] = map[string]bool{}
+		}
+		ipToMac[ip][mac] = true
+
+		if _, ok := macToIp[mac]; !ok {
+			macToIp[mac] = map[string]bool{}
+		}
+		macToIp[mac][ip] = true
+	}
+
+	return ipToMac, macToIp
 }
 
 func (c *Cache) toJson() ([]byte, error) {

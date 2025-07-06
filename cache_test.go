@@ -76,3 +76,84 @@ func Test_cacheDeserError(t *testing.T) {
 		})
 	}
 }
+
+func Test_getIpAndMacMaps(t *testing.T) {
+	cache := newCache()
+
+	mac1, _ := net.ParseMAC("00:00:00:00:00:01")
+	mac2, _ := net.ParseMAC("00:00:00:00:00:02")
+	mac3, _ := net.ParseMAC("00:00:00:00:00:03")
+	mac4, _ := net.ParseMAC("00:00:00:00:00:04")
+
+	// 3 standard events
+	event := ArpEvent{
+		ip:  net.ParseIP("10.0.0.1"),
+		mac: mac1,
+		ts:  1749913040000,
+	}
+	cache.update(event)
+
+	event = ArpEvent{
+		ip:  net.ParseIP("10.0.0.2"),
+		mac: mac2,
+		ts:  1749913040000,
+	}
+	cache.update(event)
+
+	event = ArpEvent{
+		ip:  net.ParseIP("10.0.0.3"),
+		mac: mac3,
+		ts:  1749913040000,
+	}
+	cache.update(event)
+
+	// event with diff mac for already seen ip
+	event = ArpEvent{
+		ip:  net.ParseIP("10.0.0.2"),
+		mac: mac4,
+		ts:  1749913040000,
+	}
+	cache.update(event)
+
+	// event with diff ip for already seen mac
+	event = ArpEvent{
+		ip:  net.ParseIP("10.0.0.5"),
+		mac: mac1,
+		ts:  1749913040000,
+	}
+	cache.update(event)
+
+	ipToMac, macToIp := cache.getIpAndMacMaps()
+
+	if size := len(ipToMac); size != 4 {
+		t.Fatal("unexpected ipToMac size:", size)
+	}
+	if size := len(ipToMac["10.0.0.1"]); size != 1 {
+		t.Fatal("unexpected size for 10.0.0.1", size)
+	}
+	if size := len(ipToMac["10.0.0.2"]); size != 2 {
+		t.Fatal("unexpected size for 10.0.0.2", size)
+	}
+	if size := len(ipToMac["10.0.0.3"]); size != 1 {
+		t.Fatal("unexpected size for 10.0.0.3", size)
+	}
+	if size := len(ipToMac["10.0.0.5"]); size != 1 {
+		t.Fatal("unexpected size for 10.0.0.5", size)
+	}
+
+	if size := len(macToIp); size != 4 {
+		t.Fatal("unexpected macToIp size:", size)
+	}
+	if size := len(macToIp[mac1.String()]); size != 2 {
+		t.Fatalf("unexpected macToIp size for %v: %v", mac1.String(), size)
+	}
+	if size := len(macToIp[mac2.String()]); size != 1 {
+		t.Fatalf("unexpected macToIp size for %v: %v", mac1.String(), size)
+	}
+	if size := len(macToIp[mac3.String()]); size != 1 {
+		t.Fatalf("unexpected macToIp size for %v: %v", mac1.String(), size)
+	}
+	if size := len(macToIp[mac4.String()]); size != 1 {
+		t.Fatalf("unexpected macToIp size for %v: %v", mac1.String(), size)
+	}
+}

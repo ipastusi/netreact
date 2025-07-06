@@ -45,9 +45,9 @@ Usage of ./netreact:
   -f string
     	BPF filter, e.g. "arp and src host not 0.0.0.0" (default "arp")
   -fh string
-    	host event filter (default "11111")
+    	host event filter (default "1111111")
   -fp string
-    	packet event filter (default "11111")
+    	packet event filter (default "1111111")
   -i string
     	interface name, e.g. eth0
   -l string
@@ -65,7 +65,7 @@ Examples:
 ./netreact -i eth0 -d events -f 'arp and src host not 0.0.0.0'
 ./netreact -i eth0 -d events -u=false
 ./netreact -i eth0 -d events -s nrstate.json
-./netreact -i eth0 -d events -fp '0000' -fh '1111'
+./netreact -i eth0 -d events -fp '0000000' -fh '1111111'
 ```
 
 ## State file
@@ -84,23 +84,27 @@ Netreact can generate the following types of events:
 
 | Event type                    | Event code | Packet event filter | Host event filter |
 |-------------------------------|------------|---------------------|-------------------|
-| NEW_PACKET                    | 100        | 10000               |                   |
-| NEW_LINK_LOCAL_UNICAST_PACKET | 101        | 01000               |                   |
-| NEW_UNSPECIFIED_PACKET        | 102        | 00100               |                   |
-| NEW_BROADCAST_PACKET          | 103        | 00010               |                   |
-| NEW_UNEXPECTED_IP_PACKET      | 104        | 00001               |                   |
-| NEW_HOST                      | 200        |                     | 10000             |
-| NEW_LINK_LOCAL_UNICAST_HOST   | 201        |                     | 01000             |
-| NEW_UNSPECIFIED_HOST          | 202        |                     | 00100             |
-| NEW_BROADCAST_HOST            | 203        |                     | 00010             |
-| NEW_UNEXPECTED_IP_HOST        | 204        |                     | 00001             |
+| NEW_PACKET                    | 100        | 1000000             |                   |
+| NEW_LINK_LOCAL_UNICAST_PACKET | 101        | 0100000             |                   |
+| NEW_UNSPECIFIED_PACKET        | 102        | 0010000             |                   |
+| NEW_BROADCAST_PACKET          | 103        | 0001000             |                   |
+| NEW_UNEXPECTED_IP_PACKET      | 104        | 0000100             |                   |
+| NEW_IP_FOR_MAC_PACKET         | 105        | 0000010             |                   |
+| NEW_MAC_FOR_IP_PACKET         | 106        | 0000001             |                   |
+| NEW_HOST                      | 200        |                     | 1000000           |
+| NEW_LINK_LOCAL_UNICAST_HOST   | 201        |                     | 0100000           |
+| NEW_UNSPECIFIED_HOST          | 202        |                     | 0010000           |
+| NEW_BROADCAST_HOST            | 203        |                     | 0001000           |
+| NEW_UNEXPECTED_IP_HOST        | 204        |                     | 0000100           |
+| NEW_IP_FOR_MAC_HOST           | 205        |                     | 0000010           |
+| NEW_MAC_FOR_IP_HOST           | 206        |                     | 0000001           |
 
 Event codes are used in generated filenames only.
 
 Use `-fp` and `-fh` flags to produce event files for selected event types only, e.g.:
 
 ```
--fp '00000' -fh '11000'
+-fp '0000000' -fh '1100000'
 ```
 
 The above configuration will prevent Netreact from emiting any packet-related events, while emiting only `NEW_HOST` and
@@ -152,6 +156,8 @@ Event details will depend on the event type:
 - `count` - Number of packets with this IP-MAC combination seen so far.
 - `macVendor` - Vendor name for the MAC address OUI. `Unknown` if not found.
 - `expectedCidrRange` - Expected CIDR range.
+- `otherIps` - Other IP addresses recorded previously for this MAC.
+- `otherMacs` - Other MAC addresses recorded previously for htis IP.
 
 ## Event handling
 
@@ -182,7 +188,5 @@ fswatch --event Created events/ | xargs -n 1 -I _ echo _
 
 ## TODO
 
-- [ ] New event type - new IP address for the same MAC
-- [ ] New event type - new MAC address for the same IP
 - [ ] Schema validation when loading a state file
 - [ ] Automatic event file cleanup
