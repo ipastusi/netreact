@@ -51,9 +51,9 @@ func cacheFromJson(data []byte) (Cache, error) {
 	return cache, err
 }
 
-func (c *Cache) getIpAndMacMaps() (map[string]map[string]bool, map[string]map[string]bool) {
-	ipToMac := map[string]map[string]bool{}
-	macToIp := map[string]map[string]bool{}
+func (c *Cache) getIpAndMacMaps() (map[string]map[string]struct{}, map[string]map[string]struct{}) {
+	ipToMac := map[string]map[string]struct{}{}
+	macToIp := map[string]map[string]struct{}{}
 
 	for key := range c.Items {
 		ipBytes, macBytes := key[:4], key[4:]
@@ -61,14 +61,14 @@ func (c *Cache) getIpAndMacMaps() (map[string]map[string]bool, map[string]map[st
 		mac := net.HardwareAddr(macBytes).String()
 
 		if _, ok := ipToMac[ip]; !ok {
-			ipToMac[ip] = map[string]bool{}
+			ipToMac[ip] = map[string]struct{}{}
 		}
-		ipToMac[ip][mac] = true
+		ipToMac[ip][mac] = struct{}{}
 
 		if _, ok := macToIp[mac]; !ok {
-			macToIp[mac] = map[string]bool{}
+			macToIp[mac] = map[string]struct{}{}
 		}
-		macToIp[mac][ip] = true
+		macToIp[mac][ip] = struct{}{}
 	}
 
 	return ipToMac, macToIp

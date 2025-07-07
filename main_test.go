@@ -52,9 +52,9 @@ func Test_processArpEvents(t *testing.T) {
 	hpMac2, _ := net.ParseMAC("b4:b6:86:01:02:04")
 	dellMac, _ := net.ParseMAC("f8:bc:12:01:02:03")
 
-	excludedIPs := map[string]bool{"192.168.1.111": true}
-	excludedMACs := map[string]bool{"31:0c:8a:00:00:01": true}
-	excludedPairs := map[string]bool{"192.168.1.112,31:0c:8a:00:00:02": true}
+	excludedIPs := map[string]struct{}{"192.168.1.111": {}}
+	excludedMACs := map[string]struct{}{"31:0c:8a:00:00:01": {}}
+	excludedPairs := map[string]struct{}{"192.168.1.112,31:0c:8a:00:00:02": {}}
 	filter := newArpEventFilter(excludedIPs, excludedMACs, excludedPairs)
 
 	cache := newCache()

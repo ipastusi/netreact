@@ -7,12 +7,12 @@ import (
 )
 
 type ArpEventFilter struct {
-	excludedIPs   map[string]bool
-	excludedMACs  map[string]bool
-	excludedPairs map[string]bool
+	excludedIPs   map[string]struct{}
+	excludedMACs  map[string]struct{}
+	excludedPairs map[string]struct{}
 }
 
-func newArpEventFilter(excludedIPs map[string]bool, excludedMACs map[string]bool, excludedPairs map[string]bool) ArpEventFilter {
+func newArpEventFilter(excludedIPs map[string]struct{}, excludedMACs map[string]struct{}, excludedPairs map[string]struct{}) ArpEventFilter {
 	return ArpEventFilter{
 		excludedIPs:   excludedIPs,
 		excludedMACs:  excludedMACs,
@@ -21,18 +21,19 @@ func newArpEventFilter(excludedIPs map[string]bool, excludedMACs map[string]bool
 }
 
 func (f ArpEventFilter) isExcluded(ip string, mac string) bool {
-	if f.excludedIPs[ip] {
+	pair := fmt.Sprintf("%v,%v", ip, mac)
+	if _, ok := f.excludedIPs[ip]; ok {
 		return true
-	} else if f.excludedMACs[mac] {
+	} else if _, ok = f.excludedMACs[mac]; ok {
 		return true
-	} else if pair := fmt.Sprintf("%v,%v", ip, mac); f.excludedPairs[pair] {
+	} else if _, ok = f.excludedPairs[pair]; ok {
 		return true
 	}
 	return false
 }
 
-func readIPs(data string) (map[string]bool, error) {
-	ips := map[string]bool{}
+func readIPs(data string) (map[string]struct{}, error) {
+	ips := map[string]struct{}{}
 
 	for line := range strings.Lines(data) {
 		trimmedLine := strings.Trim(line, " ")
@@ -40,14 +41,14 @@ func readIPs(data string) (map[string]bool, error) {
 		if !isValidIPv4(trimmedLine) {
 			return nil, fmt.Errorf("invalid IP address: %v", line)
 		}
-		ips[trimmedLine] = true
+		ips[trimmedLine] = struct{}{}
 	}
 
 	return ips, nil
 }
 
-func readMACs(data string) (map[string]bool, error) {
-	macs := map[string]bool{}
+func readMACs(data string) (map[string]struct{}, error) {
+	macs := map[string]struct{}{}
 
 	for line := range strings.Lines(data) {
 		trimmedLine := strings.Trim(line, " ")
@@ -55,14 +56,14 @@ func readMACs(data string) (map[string]bool, error) {
 		if !isValidMAC(trimmedLine) {
 			return nil, fmt.Errorf("invalid MAC address: %v", line)
 		}
-		macs[trimmedLine] = true
+		macs[trimmedLine] = struct{}{}
 	}
 
 	return macs, nil
 }
 
-func readPairs(data string) (map[string]bool, error) {
-	pairs := map[string]bool{}
+func readPairs(data string) (map[string]struct{}, error) {
+	pairs := map[string]struct{}{}
 
 	for line := range strings.Lines(data) {
 		trimmedLine := strings.Trim(line, " ")
@@ -78,7 +79,7 @@ func readPairs(data string) (map[string]bool, error) {
 			return nil, fmt.Errorf("invalid MAC address: %v", line)
 		}
 		pair := fmt.Sprintf("%v,%v", ip, mac)
-		pairs[pair] = true
+		pairs[pair] = struct{}{}
 	}
 
 	return pairs, nil

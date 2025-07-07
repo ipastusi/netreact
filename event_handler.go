@@ -120,8 +120,8 @@ type ArpEventHandler struct {
 	packetEventFilter string
 	hostEventFilter   string
 	expectedCidrRange *net.IPNet
-	ipToMac           map[string]map[string]bool
-	macToIp           map[string]map[string]bool
+	ipToMac           map[string]map[string]struct{}
+	macToIp           map[string]map[string]struct{}
 }
 
 func newArpEventHandler(
@@ -160,14 +160,14 @@ func (h ArpEventHandler) updateMaps(extArpEvent ExtendedArpEvent) {
 	ip, mac := extArpEvent.ip.String(), extArpEvent.mac.String()
 
 	if _, ok := h.ipToMac[ip]; !ok {
-		h.ipToMac[ip] = map[string]bool{}
+		h.ipToMac[ip] = map[string]struct{}{}
 	}
-	h.ipToMac[ip][mac] = true
+	h.ipToMac[ip][mac] = struct{}{}
 
 	if _, ok := h.macToIp[mac]; !ok {
-		h.macToIp[mac] = map[string]bool{}
+		h.macToIp[mac] = map[string]struct{}{}
 	}
-	h.macToIp[mac][ip] = true
+	h.macToIp[mac][ip] = struct{}{}
 }
 
 func (h ArpEventHandler) getOtherIps(extArpEvent ExtendedArpEvent) []string {

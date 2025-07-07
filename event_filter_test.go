@@ -5,20 +5,20 @@ import (
 )
 
 func Test_isExcluded(t *testing.T) {
-	excludedIPs := map[string]bool{
-		"10.0.0.2": true,
-		"10.0.0.3": true,
+	excludedIPs := map[string]struct{}{
+		"10.0.0.2": {},
+		"10.0.0.3": {},
 	}
 
-	excludedMACs := map[string]bool{
-		"31:0c:8a:cb:8f:aa": true,
-		"31:0c:8a:cb:8f:ab": true,
-		"31:0c:8a:cb:8f:ac": true,
+	excludedMACs := map[string]struct{}{
+		"31:0c:8a:cb:8f:aa": {},
+		"31:0c:8a:cb:8f:ab": {},
+		"31:0c:8a:cb:8f:ac": {},
 	}
 
-	excludedPairs := map[string]bool{
-		"10.0.2.1,31:0c:8a:cb:0a:0a": true,
-		"10.0.2.2,31:0c:8a:cb:0b:0b": true,
+	excludedPairs := map[string]struct{}{
+		"10.0.2.1,31:0c:8a:cb:0a:0a": {},
+		"10.0.2.2,31:0c:8a:cb:0b:0b": {},
 	}
 
 	filter := newArpEventFilter(excludedIPs, excludedMACs, excludedPairs)

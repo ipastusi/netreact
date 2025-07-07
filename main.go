@@ -66,7 +66,7 @@ func main() {
 		go handleSignals(sig, cache, stateFileName)
 	}
 
-	var excludeIPs, excludeMACs, excludePairs map[string]bool
+	var excludeIPs, excludeMACs, excludePairs map[string]struct{}
 	if flags.excludeIPs != "" {
 		data, err := os.ReadFile(flags.excludeIPs)
 		exitOnError(err)
