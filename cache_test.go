@@ -62,7 +62,7 @@ func Test_cacheDeserUpdateSer(t *testing.T) {
 		t.Fatal("error during serialization")
 	}
 	if !bytes.Equal(actualOutputJsonBytes, yetAnotherActualOutputJsonBytes) {
-		t.Fatal("data change during deserialization / serialization")
+		t.Fatalf("data change during deserialization / serialization - before: %v, after: %v", string(actualOutputJsonBytes), string(yetAnotherActualOutputJsonBytes))
 	}
 }
 

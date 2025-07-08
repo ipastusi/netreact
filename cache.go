@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net"
+	"slices"
 )
 
 // cache key
@@ -92,6 +93,9 @@ func (c *Cache) toJson() ([]byte, error) {
 		}
 		state.Items = append(state.Items, stateItem)
 	}
+	slices.SortFunc(state.Items, func(a, b StateItem) int {
+		return int(a.FirstTs - b.FirstTs)
+	})
 	return json.Marshal(state)
 }
 
