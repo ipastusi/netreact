@@ -44,12 +44,14 @@ func main() {
 	cache := newCache()
 	stateFileName := flags.stateFileName
 	if stateFileName != "" {
-		var data []byte
-		data, err = os.ReadFile(stateFileName)
+		var state []byte
+		state, err = os.ReadFile(stateFileName)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			exitOnError(err)
 		} else if err == nil {
-			cache, err = cacheFromJson(data)
+			errs := validateState(state)
+			exitOnErrors(errs)
+			cache, err = fromJson(state)
 			exitOnError(err)
 		}
 	}
@@ -117,6 +119,13 @@ func main() {
 func exitOnError(err error) {
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func exitOnErrors(errs []error) {
+	if len(errs) != 0 {
+		fmt.Println(errs)
 		os.Exit(1)
 	}
 }

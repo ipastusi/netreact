@@ -188,5 +188,4 @@ fswatch --event Created events/ | xargs -n 1 -I _ echo _
 
 ## TODO
 
-- [ ] Schema validation when loading a state file
 - [ ] Automatic event file cleanup

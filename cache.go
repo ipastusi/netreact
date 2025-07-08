@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"net"
 )
@@ -10,19 +9,25 @@ import (
 
 type CacheKey [10]byte
 
-func (k CacheKey) MarshalText() ([]byte, error) {
-	keyByteArray := k[:]
-	keyHex := hex.EncodeToString(keyByteArray)
-	return []byte(keyHex), nil
+func cacheKeyFromArpEvent(arpEvent ArpEvent) CacheKey {
+	var key CacheKey
+	copy(key[:], arpEvent.ip.To4())
+	copy(key[4:], arpEvent.mac)
+	return key
 }
 
-func (k *CacheKey) UnmarshalText(input []byte) error {
-	s := string(input)
-	keyByteSlice, err := hex.DecodeString(s)
-	if err == nil {
-		*k = CacheKey(keyByteSlice)
-	}
-	return err
+func cacheKeyFromIpMac(ip string, mac string) CacheKey {
+	keyBytes := net.ParseIP(ip).To4()
+	macBytes, _ := net.ParseMAC(mac)
+	keyBytes = append(keyBytes, macBytes...)
+	return CacheKey(keyBytes)
+}
+
+func (k CacheKey) toIpMac() (string, string) {
+	rawIp, rawMac := k[:4], k[4:]
+	ip := net.IP(rawIp).String()
+	mac := net.HardwareAddr(rawMac).String()
+	return ip, mac
 }
 
 // cache value
@@ -36,7 +41,7 @@ type CacheValue struct {
 // cache
 
 type Cache struct {
-	Items map[CacheKey]CacheValue `json:"items"`
+	Items map[CacheKey]CacheValue
 }
 
 func newCache() Cache {
@@ -45,10 +50,49 @@ func newCache() Cache {
 	}
 }
 
-func cacheFromJson(data []byte) (Cache, error) {
+// state file
+
+type State struct {
+	Items []StateItem `json:"items"`
+}
+
+type StateItem struct {
+	Ip  string `json:"ip"`
+	Mac string `json:"mac"`
+	CacheValue
+}
+
+func fromJson(data []byte) (Cache, error) {
+	var state State
+	err := json.Unmarshal(data, &state)
 	cache := newCache()
-	err := json.Unmarshal(data, &cache)
+	for _, stateItem := range state.Items {
+		key := cacheKeyFromIpMac(stateItem.Ip, stateItem.Mac)
+		cache.Items[key] = CacheValue{
+			FirstTs: stateItem.FirstTs,
+			LastTs:  stateItem.LastTs,
+			Count:   stateItem.Count,
+		}
+	}
 	return cache, err
+}
+
+func (c *Cache) toJson() ([]byte, error) {
+	if len(c.Items) == 0 {
+		return []byte(`{"items":[]}`), nil
+	}
+
+	var state State
+	for cacheKey, cacheValue := range c.Items {
+		ip, mac := cacheKey.toIpMac()
+		stateItem := StateItem{
+			Ip:         ip,
+			Mac:        mac,
+			CacheValue: cacheValue,
+		}
+		state.Items = append(state.Items, stateItem)
+	}
+	return json.Marshal(state)
 }
 
 func (c *Cache) getIpAndMacMaps() (map[string]map[string]struct{}, map[string]map[string]struct{}) {
@@ -74,12 +118,8 @@ func (c *Cache) getIpAndMacMaps() (map[string]map[string]struct{}, map[string]ma
 	return ipToMac, macToIp
 }
 
-func (c *Cache) toJson() ([]byte, error) {
-	return json.Marshal(c)
-}
-
 func (c *Cache) update(arpEvent ArpEvent) ExtendedArpEvent {
-	key := c.generateCacheKey(arpEvent)
+	key := cacheKeyFromArpEvent(arpEvent)
 
 	val := c.Items[key]
 	if val.Count == 0 {
@@ -97,13 +137,6 @@ func (c *Cache) update(arpEvent ArpEvent) ExtendedArpEvent {
 }
 
 func (c *Cache) get(arpEvent ArpEvent) CacheValue {
-	key := c.generateCacheKey(arpEvent)
+	key := cacheKeyFromArpEvent(arpEvent)
 	return c.Items[key]
-}
-
-func (c *Cache) generateCacheKey(arpEvent ArpEvent) CacheKey {
-	var key CacheKey
-	copy(key[:], arpEvent.ip.To4())
-	copy(key[4:], arpEvent.mac)
-	return key
 }

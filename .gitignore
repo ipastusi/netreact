@@ -1,6 +1,7 @@
 .idea/
 oui_scripts/
 *.json
+!state_schema.json
 *.log
 ips.txt
 macs.txt

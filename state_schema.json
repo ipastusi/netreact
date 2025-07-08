@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "mac": {
+            "type": "string"
+          },
+          "firstTs": {
+            "type": "integer"
+          },
+          "lastTs": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ip",
+          "mac",
+          "firstTs",
+          "lastTs",
+          "count"
+        ]
+      }
+    }
+  },
+  "required": [
+    "items"
+  ]
+}
