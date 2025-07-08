@@ -57,6 +57,13 @@ type State struct {
 	Items []StateItem `json:"items"`
 }
 
+func newState() State {
+	return State{
+		// nil vs empty slice matters when marshalling to json
+		Items: make([]StateItem, 0),
+	}
+}
+
 type StateItem struct {
 	Ip  string `json:"ip"`
 	Mac string `json:"mac"`
@@ -79,11 +86,7 @@ func fromJson(data []byte) (Cache, error) {
 }
 
 func (c *Cache) toJson() ([]byte, error) {
-	if len(c.Items) == 0 {
-		return []byte(`{"items":[]}`), nil
-	}
-
-	var state State
+	state := newState()
 	for cacheKey, cacheValue := range c.Items {
 		ip, mac := cacheKey.toIpMac()
 		stateItem := StateItem{

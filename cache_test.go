@@ -66,6 +66,14 @@ func Test_cacheDeserUpdateSer(t *testing.T) {
 	}
 }
 
+func Test_cacheSerEmpty(t *testing.T) {
+	cache := newCache()
+	output, _ := cache.toJson()
+	if !bytes.Equal(output, []byte(`{"items":[]}`)) {
+		t.Fatal("unexpected output:", string(output))
+	}
+}
+
 func Test_cacheDeserError(t *testing.T) {
 	data := []struct {
 		name  string
