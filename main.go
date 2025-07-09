@@ -87,14 +87,21 @@ func main() {
 		excludePairs, err = readPairs(string(data))
 		exitOnError(err)
 	}
-	filter := newArpEventFilter(excludeIPs, excludeMACs, excludePairs)
 
-	command := flags.eventDir
+	logHandler := slog.NewJSONHandler(logFile, nil)
+	eventDir := flags.eventDir
+	autoCleanupDelay := flags.autoCleanupDelay
+	if flags.autoCleanupDelay > 0 {
+		janitor, err := newEventJanitor(logHandler, eventDir, autoCleanupDelay)
+		exitOnError(err)
+		janitor.start()
+	}
+
+	filter := newArpEventFilter(excludeIPs, excludeMACs, excludePairs)
 	packetEventFilter := flags.packetEventFilter
 	hostEventFilter := flags.hostEventFilter
 	expectedCidrRange := flags.expectedCidrRange
-	logHandler := slog.NewJSONHandler(logFile, nil)
-	handler := newArpEventHandler(uiApp, logHandler, command, packetEventFilter, hostEventFilter, expectedCidrRange, cache)
+	eventHandler := newArpEventHandler(uiApp, logHandler, eventDir, packetEventFilter, hostEventFilter, expectedCidrRange, cache)
 	localMac := []byte(iface.HardwareAddr)
 	packetSource := gopacket.NewPacketSource(pcapHandle, pcapHandle.LinkType())
 	for packet := range packetSource.Packets() {
@@ -111,7 +118,7 @@ func main() {
 				mac: net.HardwareAddr(arp.SourceHwAddress),
 				ts:  time.Now().UnixMilli(),
 			}
-			processArpEvent(arpEvent, cache, filter, handler)
+			processArpEvent(arpEvent, cache, filter, eventHandler)
 		}
 	}
 }

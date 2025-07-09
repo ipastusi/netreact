@@ -86,9 +86,7 @@ func readPairs(data string) (map[string]struct{}, error) {
 }
 
 func isValidIPv4(ip string) bool {
-	if addr := net.ParseIP(ip); addr == nil {
-		return false
-	} else if addr.To4() == nil {
+	if addr := net.ParseIP(ip); addr == nil || addr.To4() == nil {
 		return false
 	}
 	return true

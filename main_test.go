@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net"
 	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -25,25 +24,15 @@ func Test_processArpEvents(t *testing.T) {
 				t.Fatal("error removing test log file:", err)
 			}
 		}
-
-		files, err := filepath.Glob("events/netreact*.json")
-		if err != nil {
-			t.Fatal("error getting matching files:", err)
-		}
-		for _, file := range files {
-			err = os.Remove(file)
-			if err != nil {
-				t.Fatal("error removing event files:", err)
-			}
-		}
 	}()
 
-	pwd, err := os.Getwd()
+	eventDir := "events"
+	logHandler := getLogHandler(t)
+	janitor, err := newEventJanitor(logHandler, eventDir, 1)
 	if err != nil {
-		t.Fatal("error getting pwd:", err)
+		t.Fatal("unexpected error creating event janitor")
 	}
-
-	eventDir := filepath.Join(pwd, "events")
+	janitor.start()
 
 	rpiMac, _ := net.ParseMAC("2c:cf:67:0c:6c:a4")
 	unknownMac, _ := net.ParseMAC("31:0c:8a:cb:8f:ab")
@@ -58,7 +47,7 @@ func Test_processArpEvents(t *testing.T) {
 	filter := newArpEventFilter(excludedIPs, excludedMACs, excludedPairs)
 
 	cache := newCache()
-	handler := newArpEventHandler(nil, getLogHandler(t), eventDir, "1111111", "1111111", "192.168.1.0/24", cache)
+	handler := newArpEventHandler(nil, logHandler, eventDir, "1111111", "1111111", "192.168.1.0/24", cache)
 
 	events := []struct {
 		arpEvent           ArpEvent
@@ -170,6 +159,9 @@ func Test_processArpEvents(t *testing.T) {
 			}
 		}
 	}
+
+	// let the janitor do its job
+	time.Sleep(2 * time.Second)
 }
 
 func getLogHandler(t *testing.T) slog.Handler {

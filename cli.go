@@ -23,6 +23,7 @@ type CliFlags struct {
 	excludeIPs        string
 	excludeMACs       string
 	excludePairs      string
+	autoCleanupDelay  uint
 }
 
 func getCliFlags() (CliFlags, error) {
@@ -39,6 +40,7 @@ func getCliFlags() (CliFlags, error) {
 	excludeIPs := flag.String("ei", "", "file with excluded IP addresses")
 	excludeMACs := flag.String("em", "", "file with excluded MAC addresses")
 	excludePairs := flag.String("ep", "", "file with excluded IP-MAC address pairs")
+	autoCleanupDelay := flag.Uint("a", 0, "auto cleanup generated event files after n seconds (default 0, disabled)")
 
 	flag.Parse()
 	flags := CliFlags{
@@ -55,6 +57,7 @@ func getCliFlags() (CliFlags, error) {
 		excludeIPs:        *excludeIPs,
 		excludeMACs:       *excludeMACs,
 		excludePairs:      *excludePairs,
+		autoCleanupDelay:  *autoCleanupDelay,
 	}
 
 	err := processCliFlags(flags)

@@ -32,6 +32,8 @@ Help:
 ```
 ./netreact -h
 Usage of ./netreact:
+  -a uint
+    	auto cleanup generated event files after n seconds (default 0, disabled)
   -c string
     	expected CIDR range (default "0.0.0.0/0")
   -d string
@@ -185,7 +187,3 @@ fswatch --event Created events/ | xargs -n 1 -I _ echo _
 /path/to/netreact/events/netreact-1747995770336-100.json
 /path/to/netreact/events/netreact-1747995771602-100.json
 ```
-
-## TODO
-
-- [ ] Automatic event file cleanup

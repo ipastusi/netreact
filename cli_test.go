@@ -19,6 +19,7 @@ func Test_processCliFlags(t *testing.T) {
 		packetEventFilter: "1000000",
 		hostEventFilter:   "1000000",
 		expectedCidrRange: "192.168.1.0/24",
+		autoCleanupDelay:  5,
 	}
 
 	data := []struct {
@@ -26,7 +27,7 @@ func Test_processCliFlags(t *testing.T) {
 		flags CliFlags
 		ok    bool
 	}{
-		{"default values", CliFlags{ifaceName: validIface.Name, packetEventFilter: "1111111", hostEventFilter: "1111111", expectedCidrRange: "0.0.0.0/0"}, true},
+		{"default values", CliFlags{ifaceName: validIface.Name, packetEventFilter: "1111111", hostEventFilter: "1111111", expectedCidrRange: "0.0.0.0/0", autoCleanupDelay: 0}, true},
 		{"custom values", customFlags, true},
 		{"invalid package event filter len", CliFlags{packetEventFilter: "1111111", hostEventFilter: "111111"}, false},
 		{"invalid package event filter flag", CliFlags{packetEventFilter: "0000002", hostEventFilter: "1111111"}, false},
