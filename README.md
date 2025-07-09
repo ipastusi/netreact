@@ -187,3 +187,7 @@ fswatch --event Created events/ | xargs -n 1 -I _ echo _
 /path/to/netreact/events/netreact-1747995770336-100.json
 /path/to/netreact/events/netreact-1747995771602-100.json
 ```
+
+If you are using Netreact on macOS with automatic cleanup of generated event files enabled using `-a` flag, and `fswatch` incorrectly 
+reports file deletion as `Created` events, you might want to increase the cleanup delay to e.g. 30 seconds. See 
+[fswatch #144](https://github.com/emcrisostomo/fswatch/issues/144#issuecomment-264135666).
