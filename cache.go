@@ -12,7 +12,7 @@ type CacheKey [10]byte
 
 func cacheKeyFromArpEvent(arpEvent ArpEvent) CacheKey {
 	var key CacheKey
-	copy(key[:], arpEvent.ip.To4())
+	copy(key[:4], arpEvent.ip.To4())
 	copy(key[4:], arpEvent.mac)
 	return key
 }
@@ -25,10 +25,18 @@ func cacheKeyFromIpMac(ip string, mac string) CacheKey {
 }
 
 func (k CacheKey) toIpMac() (string, string) {
-	rawIp, rawMac := k[:4], k[4:]
-	ip := net.IP(rawIp).String()
-	mac := net.HardwareAddr(rawMac).String()
+	ipBytes, macBytes := k.ipBytes(), k.macBytes()
+	ip := net.IP(ipBytes).String()
+	mac := net.HardwareAddr(macBytes).String()
 	return ip, mac
+}
+
+func (k CacheKey) ipBytes() []byte {
+	return k[:4]
+}
+
+func (k CacheKey) macBytes() []byte {
+	return k[4:]
 }
 
 // cache value
@@ -107,7 +115,7 @@ func (c *Cache) getIpAndMacMaps() (map[string]map[string]struct{}, map[string]ma
 	macToIp := map[string]map[string]struct{}{}
 
 	for key := range c.Items {
-		ipBytes, macBytes := key[:4], key[4:]
+		ipBytes, macBytes := key.ipBytes(), key.macBytes()
 		ip := net.IP(ipBytes).String()
 		mac := net.HardwareAddr(macBytes).String()
 

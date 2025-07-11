@@ -159,7 +159,7 @@ Event details will depend on the event type:
 - `macVendor` - Vendor name for the MAC address OUI. `Unknown` if not found.
 - `expectedCidrRange` - Expected CIDR range.
 - `otherIps` - Other IP addresses recorded previously for this MAC.
-- `otherMacs` - Other MAC addresses recorded previously for htis IP.
+- `otherMacs` - Other MAC addresses recorded previously for this IP.
 
 ## Event handling
 

@@ -61,8 +61,8 @@ func initialDataLoad(cache Cache) *[]UIEntry {
 	var data []UIEntry
 
 	for k, v := range cache.Items {
-		ip := net.IP(k[:4])
-		mac := net.HardwareAddr(k[4:])
+		ip := net.IP(k.ipBytes())
+		mac := net.HardwareAddr(k.macBytes())
 		row := UIEntry{
 			IP:        ip.String(),
 			MAC:       mac.String(),
