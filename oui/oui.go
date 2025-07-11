@@ -1,4 +1,4 @@
-package main
+package oui
 
 import (
 	"cmp"
@@ -21,7 +21,7 @@ var ouiRaw string
 
 var ouiList = strings.Split(ouiRaw, "\n")
 
-func macToVendor(mac net.HardwareAddr) string {
+func MacToVendor(mac net.HardwareAddr) string {
 	oui := hex.EncodeToString(mac[:3])
 	i, ok := slices.BinarySearchFunc(ouiList, oui, func(str, target string) int {
 		return cmp.Compare(str[:6], target)

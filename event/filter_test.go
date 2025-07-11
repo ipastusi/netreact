@@ -1,4 +1,4 @@
-package main
+package event
 
 import (
 	"testing"
@@ -21,7 +21,7 @@ func Test_isExcluded(t *testing.T) {
 		"10.0.2.2,31:0c:8a:cb:0b:0b": {},
 	}
 
-	filter := newArpEventFilter(excludedIPs, excludedMACs, excludedPairs)
+	filter := NewArpEventFilter(excludedIPs, excludedMACs, excludedPairs)
 
 	data := []struct {
 		name          string
@@ -39,7 +39,7 @@ func Test_isExcluded(t *testing.T) {
 
 	for _, d := range data {
 		t.Run(d.name, func(t *testing.T) {
-			isExcluded := filter.isExcluded(d.ip, d.mac)
+			isExcluded := filter.IsExcluded(d.ip, d.mac)
 			if isExcluded != d.shouldExclude {
 				t.Fatalf("unexpected result for IP %v MAC %v, expected ok: %v, got: %v", d.ip, d.mac, d.shouldExclude, isExcluded)
 			}
@@ -62,7 +62,7 @@ func Test_readIPs(t *testing.T) {
 
 	for _, d := range data {
 		t.Run(d.name, func(t *testing.T) {
-			ips, err := readIPs(d.data)
+			ips, err := ReadIPs(d.data)
 			if (err == nil && !d.ok) || (err != nil && d.ok) {
 				t.Fatalf("unexpected result for data %v, expected ok: %v, got error: %v", d.data, d.ok, err)
 			}
@@ -88,7 +88,7 @@ func Test_readMACs(t *testing.T) {
 
 	for _, d := range data {
 		t.Run(d.name, func(t *testing.T) {
-			ips, err := readMACs(d.data)
+			ips, err := ReadMACs(d.data)
 			if (err == nil && !d.ok) || (err != nil && d.ok) {
 				t.Fatalf("unexpected result for data %v, expected ok: %v, got error: %v", d.data, d.ok, err)
 			}
@@ -114,7 +114,7 @@ func Test_readPairs(t *testing.T) {
 
 	for _, d := range data {
 		t.Run(d.name, func(t *testing.T) {
-			ips, err := readPairs(d.data)
+			ips, err := ReadPairs(d.data)
 			if (err == nil && !d.ok) || (err != nil && d.ok) {
 				t.Fatalf("unexpected result for data %v, expected ok: %v, got error: %v", d.data, d.ok, err)
 			}

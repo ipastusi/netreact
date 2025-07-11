@@ -1,4 +1,4 @@
-package main
+package oui
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ func Test_macToVendor(t *testing.T) {
 
 	for _, e := range events {
 		t.Run(e.name, func(t *testing.T) {
-			vendor := macToVendor(e.mac)
+			vendor := MacToVendor(e.mac)
 			if vendor != e.expectedVendor {
 				t.Fatal(fmt.Sprintf("Incorrect vendor %v for MAC %v, expected %v", vendor, e.mac, e.expectedVendor))
 			}

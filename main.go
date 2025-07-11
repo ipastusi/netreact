@@ -7,6 +7,11 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/ipastusi/netreact/cache"
+	"github.com/ipastusi/netreact/cli"
+	"github.com/ipastusi/netreact/event"
+	"github.com/ipastusi/netreact/oui"
+	"github.com/ipastusi/netreact/state"
 	"log/slog"
 	"net"
 	"os"
@@ -17,7 +22,7 @@ import (
 )
 
 func main() {
-	flags, err := getCliFlags()
+	flags, err := cli.GetFlags()
 	if err != nil && err.Error() == "no interface name provided" {
 		fmt.Printf("Usage of %v:\n", os.Args[0])
 		flag.PrintDefaults()
@@ -25,83 +30,85 @@ func main() {
 	}
 	exitOnError(err)
 
-	ifaceName := flags.ifaceName
+	ifaceName := flags.IfaceName
 	iface, err := net.InterfaceByName(ifaceName)
 	exitOnError(err)
 
-	logFileName := flags.logFileName
+	logFileName := flags.LogFileName
 	logFile, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	exitOnError(err)
 
 	maxSize := int32(64)
-	promisc := flags.promiscMode
+	promisc := flags.PromiscMode
 	pcapHandle, err := pcap.OpenLive(ifaceName, maxSize, promisc, pcap.BlockForever)
 	exitOnError(err)
 
-	err = pcapHandle.SetBPFFilter(flags.filter)
+	err = pcapHandle.SetBPFFilter(flags.Filter)
 	exitOnError(err)
 
-	cache := newCache()
-	stateFileName := flags.stateFileName
+	hostCache := cache.NewHostCache()
+	stateFileName := flags.StateFileName
 	if stateFileName != "" {
-		var state []byte
-		state, err = os.ReadFile(stateFileName)
+		var stateBytes []byte
+		stateBytes, err = os.ReadFile(stateFileName)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			exitOnError(err)
 		} else if err == nil {
-			errs := validateState(state)
+			errs := state.ValidateState(stateBytes)
 			exitOnErrors(errs)
-			cache, err = fromJson(state)
+			appState, err := state.FromJson(stateBytes)
 			exitOnError(err)
+			hostCache = cache.FromAppState(appState)
 		}
 	}
 
 	var uiApp *UIApp = nil
-	if flags.uiEnabled {
-		uiApp = newUIApp(cache)
-		go loadUI(uiApp, ifaceName, stateFileName)
+	if flags.UiEnabled {
+		uiApp = NewUIApp(hostCache)
+		go LoadUI(uiApp, ifaceName, stateFileName)
 	}
 
 	if stateFileName != "" {
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-		go handleSignals(sig, cache, stateFileName)
+		go handleSignals(sig, hostCache, stateFileName)
 	}
 
 	var excludeIPs, excludeMACs, excludePairs map[string]struct{}
-	if flags.excludeIPs != "" {
-		data, err := os.ReadFile(flags.excludeIPs)
+	if flags.ExcludeIPs != "" {
+		data, err := os.ReadFile(flags.ExcludeIPs)
 		exitOnError(err)
-		excludeIPs, err = readIPs(string(data))
-		exitOnError(err)
-	}
-	if flags.excludeMACs != "" {
-		data, err := os.ReadFile(flags.excludeMACs)
-		exitOnError(err)
-		excludeMACs, err = readMACs(string(data))
+		excludeIPs, err = event.ReadIPs(string(data))
 		exitOnError(err)
 	}
-	if flags.excludePairs != "" {
-		data, err := os.ReadFile(flags.excludePairs)
+	if flags.ExcludeMACs != "" {
+		data, err := os.ReadFile(flags.ExcludeMACs)
 		exitOnError(err)
-		excludePairs, err = readPairs(string(data))
+		excludeMACs, err = event.ReadMACs(string(data))
+		exitOnError(err)
+	}
+	if flags.ExcludePairs != "" {
+		data, err := os.ReadFile(flags.ExcludePairs)
+		exitOnError(err)
+		excludePairs, err = event.ReadPairs(string(data))
 		exitOnError(err)
 	}
 
 	logHandler := slog.NewJSONHandler(logFile, nil)
-	eventDir := flags.eventDir
-	autoCleanupDelay := flags.autoCleanupDelay
-	if flags.autoCleanupDelay > 0 {
-		janitor, err := newEventJanitor(logHandler, eventDir, autoCleanupDelay)
+	eventDir := flags.EventDir
+	autoCleanupDelay := flags.AutoCleanupDelay
+	if flags.AutoCleanupDelay > 0 {
+		janitor, err := event.NewEventJanitor(logHandler, eventDir, autoCleanupDelay)
 		exitOnError(err)
-		janitor.start()
+		janitor.Start()
 	}
 
-	filter := newArpEventFilter(excludeIPs, excludeMACs, excludePairs)
-	packetEventFilter := flags.packetEventFilter
-	hostEventFilter := flags.hostEventFilter
-	expectedCidrRange := flags.expectedCidrRange
-	eventHandler := newArpEventHandler(uiApp, logHandler, eventDir, packetEventFilter, hostEventFilter, expectedCidrRange, cache)
+	filter := event.NewArpEventFilter(excludeIPs, excludeMACs, excludePairs)
+	packetEventFilter := flags.PacketEventFilter
+	hostEventFilter := flags.HostEventFilter
+	expectedCidrRange := flags.ExpectedCidrRange
+	ipToMac, macToIp := hostCache.IpAndMacMaps()
+	eventHandler := event.NewArpEventHandler(logHandler, eventDir, packetEventFilter, hostEventFilter, expectedCidrRange, ipToMac, macToIp)
 	localMac := []byte(iface.HardwareAddr)
 	packetSource := gopacket.NewPacketSource(pcapHandle, pcapHandle.LinkType())
 	for packet := range packetSource.Packets() {
@@ -113,12 +120,12 @@ func main() {
 
 		arp := arpLayer.(*layers.ARP)
 		if !slices.Equal(arp.SourceHwAddress, localMac) {
-			arpEvent := ArpEvent{
-				ip:  net.IP(arp.SourceProtAddress),
-				mac: net.HardwareAddr(arp.SourceHwAddress),
-				ts:  time.Now().UnixMilli(),
+			arpEvent := event.ArpEvent{
+				Ip:  net.IP(arp.SourceProtAddress),
+				Mac: net.HardwareAddr(arp.SourceHwAddress),
+				Ts:  time.Now().UnixMilli(),
 			}
-			processArpEvent(arpEvent, cache, filter, eventHandler)
+			processArpEvent(arpEvent, hostCache, filter, eventHandler, uiApp)
 		}
 	}
 }
@@ -137,20 +144,27 @@ func exitOnErrors(errs []error) {
 	}
 }
 
-func handleSignals(sig chan os.Signal, cache Cache, stateFileName string) {
+func handleSignals(sig chan os.Signal, hostCache cache.HostCache, stateFileName string) {
 	<-sig
-	data, err := cache.toJson()
+	appState := hostCache.ToAppState()
+	stateBytes, err := appState.ToJson()
 	exitOnError(err)
 
-	err = os.WriteFile(stateFileName, data, 0644)
+	err = os.WriteFile(stateFileName, stateBytes, 0644)
 	exitOnError(err)
 	os.Exit(0)
 }
 
-func processArpEvent(arpEvent ArpEvent, cache Cache, filter ArpEventFilter, handler ArpEventHandler) {
-	if filter.isExcluded(arpEvent.ip.String(), arpEvent.mac.String()) {
+func processArpEvent(arpEvent event.ArpEvent, hostCache cache.HostCache, filter event.ArpEventFilter, handler event.ArpEventHandler, uiApp *UIApp) {
+	if filter.IsExcluded(arpEvent.Ip.String(), arpEvent.Mac.String()) {
 		return
 	}
-	extArpEvent := cache.update(arpEvent)
-	handler.handle(extArpEvent)
+
+	extArpEvent := hostCache.Update(arpEvent)
+	extArpEvent.MacVendor = oui.MacToVendor(extArpEvent.Mac)
+
+	handler.Handle(extArpEvent)
+	if uiApp != nil {
+		uiApp.UpsertAndRefreshTable(extArpEvent)
+	}
 }

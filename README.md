@@ -63,11 +63,11 @@ Usage of ./netreact:
 Examples:
 
 ```
-./netreact -i eth0 -d events
-./netreact -i eth0 -d events -f 'arp and src host not 0.0.0.0'
-./netreact -i eth0 -d events -u=false
-./netreact -i eth0 -d events -s nrstate.json
-./netreact -i eth0 -d events -fp '0000000' -fh '1111111'
+./netreact -i eth0 -d out
+./netreact -i eth0 -d out -f 'arp and src host not 0.0.0.0'
+./netreact -i eth0 -d out -u=false
+./netreact -i eth0 -d out -s nrstate.json
+./netreact -i eth0 -d out -fp '0000000' -fh '1111111'
 ```
 
 ## State file
@@ -77,7 +77,7 @@ executions.
 
 ## MAC vendor lookup
 
-Netreact ships with its own embedded MAC OUI database for MAC vendor lookup, based on publicly available MA-L data (see [oui.txt](oui.txt)).
+Netreact ships with its own embedded MAC OUI database for MAC vendor lookup, based on publicly available MA-L data (see [oui.txt](oui/oui.txt)).
 No external files or online services are required at runtime.
 
 ## Event files
@@ -169,23 +169,23 @@ mechanism and response logic.
 On Linux you might want to use `inotifywait` to detect event file creation:
 
 ```
-./netreact -i eth0 -d events
+./netreact -i eth0 -d out
 
-inotifywait -qme close_write events/ --format %w%f | parallel -u echo
-events/netreact-1747995770259-100.json
-events/netreact-1747995770270-100.json
-events/netreact-1747995770292-100.json
+inotifywait -qme close_write out/ --format %w%f | parallel -u echo
+out/netreact-1747995770259-100.json
+out/netreact-1747995770270-100.json
+out/netreact-1747995770292-100.json
 ```
 
 On macOS you might want to use `fswatch`:
 
 ```
-./netreact -i en0 -d events
+./netreact -i en0 -d out
 
-fswatch --event Created events/ | xargs -n 1 -I _ echo _
-/path/to/netreact/events/netreact-1747995770294-100.json
-/path/to/netreact/events/netreact-1747995770336-100.json
-/path/to/netreact/events/netreact-1747995771602-100.json
+fswatch --event Created out/ | xargs -n 1 -I _ echo _
+/path/to/netreact/out/netreact-1747995770294-100.json
+/path/to/netreact/out/netreact-1747995770336-100.json
+/path/to/netreact/out/netreact-1747995771602-100.json
 ```
 
 If you are using Netreact on macOS with automatic cleanup of generated event files enabled using `-a` flag, and `fswatch` incorrectly 

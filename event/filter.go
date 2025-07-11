@@ -1,4 +1,4 @@
-package main
+package event
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ type ArpEventFilter struct {
 	excludedPairs map[string]struct{}
 }
 
-func newArpEventFilter(excludedIPs map[string]struct{}, excludedMACs map[string]struct{}, excludedPairs map[string]struct{}) ArpEventFilter {
+func NewArpEventFilter(excludedIPs map[string]struct{}, excludedMACs map[string]struct{}, excludedPairs map[string]struct{}) ArpEventFilter {
 	return ArpEventFilter{
 		excludedIPs:   excludedIPs,
 		excludedMACs:  excludedMACs,
@@ -20,7 +20,7 @@ func newArpEventFilter(excludedIPs map[string]struct{}, excludedMACs map[string]
 	}
 }
 
-func (f ArpEventFilter) isExcluded(ip string, mac string) bool {
+func (f ArpEventFilter) IsExcluded(ip string, mac string) bool {
 	pair := fmt.Sprintf("%v,%v", ip, mac)
 	if _, ok := f.excludedIPs[ip]; ok {
 		return true
@@ -32,7 +32,7 @@ func (f ArpEventFilter) isExcluded(ip string, mac string) bool {
 	return false
 }
 
-func readIPs(data string) (map[string]struct{}, error) {
+func ReadIPs(data string) (map[string]struct{}, error) {
 	ips := map[string]struct{}{}
 
 	for line := range strings.Lines(data) {
@@ -47,7 +47,7 @@ func readIPs(data string) (map[string]struct{}, error) {
 	return ips, nil
 }
 
-func readMACs(data string) (map[string]struct{}, error) {
+func ReadMACs(data string) (map[string]struct{}, error) {
 	macs := map[string]struct{}{}
 
 	for line := range strings.Lines(data) {
@@ -62,7 +62,7 @@ func readMACs(data string) (map[string]struct{}, error) {
 	return macs, nil
 }
 
-func readPairs(data string) (map[string]struct{}, error) {
+func ReadPairs(data string) (map[string]struct{}, error) {
 	pairs := map[string]struct{}{}
 
 	for line := range strings.Lines(data) {
@@ -93,7 +93,6 @@ func isValidIPv4(ip string) bool {
 }
 
 func isValidMAC(mac string) bool {
-	// this could get improved
 	_, err := net.ParseMAC(mac)
 	if err != nil {
 		return false

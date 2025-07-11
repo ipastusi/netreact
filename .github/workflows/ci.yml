@@ -33,6 +33,6 @@ jobs:
       - name: Build
         run: go build
       - name: Test
-        run: go test
+        run: go test ./...
       - name: Test with race detection
-        run: go test -race
+        run: go test ./... -race

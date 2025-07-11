@@ -1,12 +1,12 @@
-package main
+package state
 
 import (
 	"errors"
 	"testing"
 )
 
-func Test_validateState(t *testing.T) {
-	state := []byte(`{
+func Test_ValidateState(t *testing.T) {
+	stateBytes := []byte(`{
 		"items": [
     		{
 				"ip": "192.168.0.1",
@@ -17,25 +17,25 @@ func Test_validateState(t *testing.T) {
 			}
     ]}`)
 
-	errs := validateState(state)
+	errs := ValidateState(stateBytes)
 	if len(errs) > 0 {
 		t.Fatal("unexpected validation error:", errs)
 	}
 }
 
-func Test_validateStateEmpty(t *testing.T) {
-	state := []byte(`{
+func Test_ValidateStateEmpty(t *testing.T) {
+	stateBytes := []byte(`{
         "items": []
     }`)
 
-	errs := validateState(state)
+	errs := ValidateState(stateBytes)
 	if len(errs) > 0 {
 		t.Fatal("unexpected validation error:", errs)
 	}
 }
 
-func Test_validateStateInvalid(t *testing.T) {
-	state := []byte(`{
+func Test_ValidateStateInvalid(t *testing.T) {
+	stateBytes := []byte(`{
 		"items": [
     		{
     			"mac": "00:00:00:01:02:03",
@@ -45,7 +45,7 @@ func Test_validateStateInvalid(t *testing.T) {
 			}
     ]}`)
 
-	errs := validateState(state)
+	errs := ValidateState(stateBytes)
 	if len(errs) != 1 && !errors.Is(errs[0], errors.New("Item at index 0 does not match the schema")) {
 		t.Fatal("unexpected validation error:", errs)
 	}

@@ -4,6 +4,9 @@ import (
 	"cmp"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
+	"github.com/ipastusi/netreact/cache"
+	"github.com/ipastusi/netreact/event"
+	"github.com/ipastusi/netreact/oui"
 	"github.com/rivo/tview"
 	"log"
 	"net"
@@ -49,7 +52,7 @@ type UIApp struct {
 	data *[]UIEntry
 }
 
-func newUIApp(cache Cache) *UIApp {
+func NewUIApp(cache cache.HostCache) *UIApp {
 	return &UIApp{
 		TableContentReadOnly: tview.TableContentReadOnly{},
 		app:                  tview.NewApplication(),
@@ -57,16 +60,16 @@ func newUIApp(cache Cache) *UIApp {
 	}
 }
 
-func initialDataLoad(cache Cache) *[]UIEntry {
+func initialDataLoad(cache cache.HostCache) *[]UIEntry {
 	var data []UIEntry
 
 	for k, v := range cache.Items {
-		ip := net.IP(k.ipBytes())
-		mac := net.HardwareAddr(k.macBytes())
+		ip := net.IP(k.IpBytes())
+		mac := net.HardwareAddr(k.MacBytes())
 		row := UIEntry{
 			IP:        ip.String(),
 			MAC:       mac.String(),
-			MACVendor: macToVendor(mac),
+			MACVendor: oui.MacToVendor(mac),
 			FirstTs:   unixTsToTime(v.FirstTs),
 			LastTs:    unixTsToTime(v.LastTs),
 			Count:     v.Count,
@@ -86,20 +89,20 @@ func unixTsToTime(ts int64) string {
 	return time.UnixMilli(ts).Format(timeFormat)
 }
 
-func (uiApp *UIApp) upsertAndRefreshTable(extArpEvent ExtendedArpEvent) {
+func (uiApp *UIApp) UpsertAndRefreshTable(extArpEvent event.ExtendedArpEvent) {
 	defer uiApp.app.Draw()
-	ip := extArpEvent.ip.String()
-	mac := extArpEvent.mac.String()
-	firstTs := unixTsToTime(extArpEvent.firstTs)
-	lastTs := unixTsToTime(extArpEvent.ts)
-	macVendor := extArpEvent.macVendor
+	ip := extArpEvent.Ip.String()
+	mac := extArpEvent.Mac.String()
+	firstTs := unixTsToTime(extArpEvent.FirstTs)
+	lastTs := unixTsToTime(extArpEvent.Ts)
+	macVendor := extArpEvent.MacVendor
 
 	// update, if found
 	hosts := uiApp.data
 	for i := 0; i < len(*hosts); i++ {
 		if (*hosts)[i].IP == ip && (*hosts)[i].MAC == mac {
 			(*hosts)[i].LastTs = lastTs
-			(*hosts)[i].Count = extArpEvent.count
+			(*hosts)[i].Count = extArpEvent.Count
 			return
 		}
 	}
@@ -150,7 +153,7 @@ func (uiApp *UIApp) GetColumnCount() int {
 
 // load the UI
 
-func loadUI(uiApp *UIApp, ifaceName string, stateFileName string) {
+func LoadUI(uiApp *UIApp, ifaceName string, stateFileName string) {
 	headerRow := getHeaderRow()
 	table := tview.NewTable().SetEvaluateAllRows(false)
 	table.SetContent(uiApp)

@@ -1,4 +1,4 @@
-package main
+package event
 
 import (
 	"context"
@@ -18,7 +18,7 @@ type EventJanitor struct {
 	ctx        context.Context
 }
 
-func newEventJanitor(log slog.Handler, eventDir string, delaySec uint) (EventJanitor, error) {
+func NewEventJanitor(log slog.Handler, eventDir string, delaySec uint) (EventJanitor, error) {
 	pattern := fmt.Sprintf("%v/netreact-?????????????-???.json", eventDir)
 	if _, err := filepath.Glob(pattern); err != nil {
 		return EventJanitor{}, err
@@ -34,7 +34,7 @@ func newEventJanitor(log slog.Handler, eventDir string, delaySec uint) (EventJan
 	}, nil
 }
 
-func (j EventJanitor) start() {
+func (j EventJanitor) Start() {
 	go func() {
 		for {
 			<-time.After(time.Duration(j.delaySec) * time.Second)

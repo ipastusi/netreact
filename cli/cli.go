@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"flag"
@@ -9,24 +9,24 @@ import (
 	"path/filepath"
 )
 
-type CliFlags struct {
-	ifaceName         string
-	filter            string
-	logFileName       string
-	stateFileName     string
-	promiscMode       bool
-	eventDir          string
-	uiEnabled         bool
-	hostEventFilter   string
-	packetEventFilter string
-	expectedCidrRange string
-	excludeIPs        string
-	excludeMACs       string
-	excludePairs      string
-	autoCleanupDelay  uint
+type Flags struct {
+	IfaceName         string
+	Filter            string
+	LogFileName       string
+	StateFileName     string
+	PromiscMode       bool
+	EventDir          string
+	UiEnabled         bool
+	HostEventFilter   string
+	PacketEventFilter string
+	ExpectedCidrRange string
+	ExcludeIPs        string
+	ExcludeMACs       string
+	ExcludePairs      string
+	AutoCleanupDelay  uint
 }
 
-func getCliFlags() (CliFlags, error) {
+func GetFlags() (Flags, error) {
 	eventDir := flag.String("d", "", "directory where to store the event files, relative to the working directory, if provided (default working directory)")
 	filter := flag.String("f", "arp", "BPF filter, e.g. \"arp and src host not 0.0.0.0\"")
 	packetEventFilter := flag.String("fp", "1111111", "packet event filter")
@@ -43,37 +43,37 @@ func getCliFlags() (CliFlags, error) {
 	autoCleanupDelay := flag.Uint("a", 0, "auto cleanup generated event files after n seconds (default 0, disabled)")
 
 	flag.Parse()
-	flags := CliFlags{
-		eventDir:          *eventDir,
-		filter:            *filter,
-		packetEventFilter: *packetEventFilter,
-		hostEventFilter:   *hostEventFilter,
-		ifaceName:         *ifaceName,
-		logFileName:       *logFileName,
-		promiscMode:       *promisc,
-		stateFileName:     *stateFileName,
-		uiEnabled:         *ui,
-		expectedCidrRange: *expectedCidrRange,
-		excludeIPs:        *excludeIPs,
-		excludeMACs:       *excludeMACs,
-		excludePairs:      *excludePairs,
-		autoCleanupDelay:  *autoCleanupDelay,
+	flags := Flags{
+		EventDir:          *eventDir,
+		Filter:            *filter,
+		PacketEventFilter: *packetEventFilter,
+		HostEventFilter:   *hostEventFilter,
+		IfaceName:         *ifaceName,
+		LogFileName:       *logFileName,
+		PromiscMode:       *promisc,
+		StateFileName:     *stateFileName,
+		UiEnabled:         *ui,
+		ExpectedCidrRange: *expectedCidrRange,
+		ExcludeIPs:        *excludeIPs,
+		ExcludeMACs:       *excludeMACs,
+		ExcludePairs:      *excludePairs,
+		AutoCleanupDelay:  *autoCleanupDelay,
 	}
 
-	err := processCliFlags(flags)
+	err := processFlags(flags)
 	return flags, err
 }
 
-func processCliFlags(flags CliFlags) error {
+func processFlags(flags Flags) error {
 	var pwd, absEventDirPath string
-	if flags.ifaceName == "" {
+	if flags.IfaceName == "" {
 		return fmt.Errorf("no interface name provided")
-	} else if _, err := net.InterfaceByName(flags.ifaceName); err != nil {
+	} else if _, err := net.InterfaceByName(flags.IfaceName); err != nil {
 		return err
 	} else if pwd, err = os.Getwd(); err != nil {
 		return err
 	} else {
-		evendDirPath := filepath.Join(pwd, flags.eventDir)
+		evendDirPath := filepath.Join(pwd, flags.EventDir)
 		absEventDirPath, err = filepath.Abs(evendDirPath)
 		if err != nil {
 			return err
@@ -82,34 +82,34 @@ func processCliFlags(flags CliFlags) error {
 		if unix.Access(absEventDirPath, unix.W_OK) != nil {
 			return fmt.Errorf("directory does not exist or is not writable: %v", absEventDirPath)
 		}
-		flags.eventDir = absEventDirPath
+		flags.EventDir = absEventDirPath
 	}
 
-	if len(flags.packetEventFilter) != 7 {
-		return fmt.Errorf("incorrect length of packet event filter: %v", len(flags.packetEventFilter))
+	if len(flags.PacketEventFilter) != 7 {
+		return fmt.Errorf("incorrect length of packet event filter: %v", len(flags.PacketEventFilter))
 	}
-	for i, char := range flags.packetEventFilter {
+	for i, char := range flags.PacketEventFilter {
 		if char != '0' && char != '1' {
 			return fmt.Errorf("invalid packet event filter flag %v at position %v", char, i)
 		}
 	}
 
-	if len(flags.hostEventFilter) != 7 {
-		return fmt.Errorf("incorrect length of host event filter: %v", len(flags.hostEventFilter))
+	if len(flags.HostEventFilter) != 7 {
+		return fmt.Errorf("incorrect length of host event filter: %v", len(flags.HostEventFilter))
 	}
-	for i, char := range flags.hostEventFilter {
+	for i, char := range flags.HostEventFilter {
 		if char != '0' && char != '1' {
 			return fmt.Errorf("invalid host event filter flag %v at position %v", char, i)
 		}
 	}
 
-	if ip, _, err := net.ParseCIDR(flags.expectedCidrRange); err != nil {
-		return fmt.Errorf("invalid expected CIDR range %v: %v", flags.expectedCidrRange, err)
+	if ip, _, err := net.ParseCIDR(flags.ExpectedCidrRange); err != nil {
+		return fmt.Errorf("invalid expected CIDR range %v: %v", flags.ExpectedCidrRange, err)
 	} else if ip.To4() == nil {
 		return fmt.Errorf("expected CIDR range should be IPv4, got: %v", ip)
 	}
 
-	excludeFiles := []string{flags.excludeIPs, flags.excludeMACs, flags.excludePairs}
+	excludeFiles := []string{flags.ExcludeIPs, flags.ExcludeMACs, flags.ExcludePairs}
 	for _, excludeFile := range excludeFiles {
 		if excludeFile != "" {
 			if _, err := os.Stat(excludeFile); err != nil {
