@@ -10,7 +10,6 @@ import (
 	"github.com/ipastusi/netreact/cache"
 	"github.com/ipastusi/netreact/cli"
 	"github.com/ipastusi/netreact/event"
-	"github.com/ipastusi/netreact/oui"
 	"github.com/ipastusi/netreact/state"
 	"log/slog"
 	"net"
@@ -161,9 +160,8 @@ func processArpEvent(arpEvent event.ArpEvent, hostCache cache.HostCache, filter 
 	}
 
 	extArpEvent := hostCache.Update(arpEvent)
-	extArpEvent.MacVendor = oui.MacToVendor(extArpEvent.Mac)
+	handler.Handle(&extArpEvent)
 
-	handler.Handle(extArpEvent)
 	if uiApp != nil {
 		uiApp.UpsertAndRefreshTable(extArpEvent)
 	}

@@ -3,6 +3,7 @@ package event
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ipastusi/netreact/oui"
 	"log/slog"
 	"net"
 	"os"
@@ -41,10 +42,22 @@ func NewArpEventHandler(
 	}
 }
 
-func (h ArpEventHandler) Handle(extArpEvent ExtendedArpEvent) {
-	h.updateMaps(extArpEvent)
-	h.handleLog(extArpEvent)
-	h.handleEventFiles(extArpEvent)
+func (h ArpEventHandler) Handle(extArpEvent *ExtendedArpEvent) {
+	h.handleLog(*extArpEvent)
+	h.updateMaps(*extArpEvent)
+	h.lookupMacVendor(extArpEvent)
+	h.handleEventFiles(*extArpEvent)
+}
+
+func (h ArpEventHandler) handleLog(extArpEvent ExtendedArpEvent) {
+	if h.logHandler != nil {
+		r := slog.NewRecord(time.UnixMilli(extArpEvent.Ts), slog.LevelInfo, "ARP packet received", 0)
+		r.AddAttrs(
+			slog.String("IP", extArpEvent.Ip.String()),
+			slog.String("MAC", extArpEvent.Mac.String()),
+		)
+		_ = h.logHandler.Handle(nil, r)
+	}
 }
 
 func (h ArpEventHandler) updateMaps(extArpEvent ExtendedArpEvent) {
@@ -61,49 +74,42 @@ func (h ArpEventHandler) updateMaps(extArpEvent ExtendedArpEvent) {
 	h.macToIp[mac][ip] = struct{}{}
 }
 
-func (h ArpEventHandler) handleLog(extArpEvent ExtendedArpEvent) {
-	if h.logHandler != nil {
-		r := slog.NewRecord(time.UnixMilli(extArpEvent.Ts), slog.LevelInfo, "ARP packet received", 0)
-		r.AddAttrs(
-			slog.String("IP", extArpEvent.Ip.String()),
-			slog.String("MAC", extArpEvent.Mac.String()),
-		)
-		_ = h.logHandler.Handle(nil, r)
-	}
+func (h ArpEventHandler) lookupMacVendor(extArpEvent *ExtendedArpEvent) {
+	extArpEvent.MacVendor = oui.MacToVendor(extArpEvent.Mac)
 }
 
 func (h ArpEventHandler) handleEventFiles(extArpEvent ExtendedArpEvent) {
 	if h.packetEventFilter[0] == '1' {
-		h.handleNewPacketEventFile(extArpEvent, NewPacket)
+		h.handlePacketNotification(extArpEvent, NewPacket)
 	}
 	if h.hostEventFilter[0] == '1' && extArpEvent.Count == 1 {
-		h.handleNewHostEventFile(extArpEvent, NewHost)
+		h.handleHostNotification(extArpEvent, NewHost)
 	}
 
 	if extArpEvent.Ip.IsLinkLocalUnicast() {
 		if h.packetEventFilter[1] == '1' {
-			h.handleNewPacketEventFile(extArpEvent, NewLinkLocalUnicastPacket)
+			h.handlePacketNotification(extArpEvent, NewLinkLocalUnicastPacket)
 		}
 		if h.hostEventFilter[1] == '1' && extArpEvent.Count == 1 {
-			h.handleNewHostEventFile(extArpEvent, NewLinkLocalUnicastHost)
+			h.handleHostNotification(extArpEvent, NewLinkLocalUnicastHost)
 		}
 	}
 
 	if extArpEvent.Ip.IsUnspecified() {
 		if h.packetEventFilter[2] == '1' {
-			h.handleNewPacketEventFile(extArpEvent, NewUnspecifiedPacket)
+			h.handlePacketNotification(extArpEvent, NewUnspecifiedPacket)
 		}
 		if h.hostEventFilter[2] == '1' && extArpEvent.Count == 1 {
-			h.handleNewHostEventFile(extArpEvent, NewUnspecifiedHost)
+			h.handleHostNotification(extArpEvent, NewUnspecifiedHost)
 		}
 	}
 
 	if extArpEvent.Ip.Equal(net.IPv4bcast) {
 		if h.packetEventFilter[3] == '1' {
-			h.handleNewPacketEventFile(extArpEvent, NewBroadcastPacket)
+			h.handlePacketNotification(extArpEvent, NewBroadcastPacket)
 		}
 		if h.hostEventFilter[3] == '1' && extArpEvent.Count == 1 {
-			h.handleNewHostEventFile(extArpEvent, NewBroadcastHost)
+			h.handleHostNotification(extArpEvent, NewBroadcastHost)
 		}
 	}
 
@@ -113,44 +119,44 @@ func (h ArpEventHandler) handleEventFiles(extArpEvent ExtendedArpEvent) {
 		!extArpEvent.Ip.IsUnspecified() &&
 		!extArpEvent.Ip.Equal(net.IPv4bcast) {
 		if h.packetEventFilter[4] == '1' {
-			h.handleNewPacketEventFile(extArpEvent, NewUnexpectedIpPacket)
+			h.handlePacketNotification(extArpEvent, NewUnexpectedIpPacket)
 		}
 		if h.hostEventFilter[4] == '1' && extArpEvent.Count == 1 {
-			h.handleNewHostEventFile(extArpEvent, NewUnexpectedIpHost)
+			h.handleHostNotification(extArpEvent, NewUnexpectedIpHost)
 		}
 	}
 
 	if len(h.macToIp[extArpEvent.Mac.String()]) > 1 {
 		if h.packetEventFilter[5] == '1' {
-			h.handleNewPacketEventFile(extArpEvent, NewIpForMacPacket)
+			h.handlePacketNotification(extArpEvent, NewIpForMacPacket)
 		}
 		if h.hostEventFilter[5] == '1' {
-			h.handleNewHostEventFile(extArpEvent, NewIpForMacHost)
+			h.handleHostNotification(extArpEvent, NewIpForMacHost)
 		}
 	}
 
 	if len(h.ipToMac[extArpEvent.Ip.String()]) > 1 {
 		if h.packetEventFilter[6] == '1' {
-			h.handleNewPacketEventFile(extArpEvent, NewMacForIpPacket)
+			h.handlePacketNotification(extArpEvent, NewMacForIpPacket)
 		}
 		if h.hostEventFilter[6] == '1' {
-			h.handleNewHostEventFile(extArpEvent, NewMacForIpHost)
+			h.handleHostNotification(extArpEvent, NewMacForIpHost)
 		}
 	}
 }
 
-func (h ArpEventHandler) handleNewPacketEventFile(extArpEvent ExtendedArpEvent, eventType Type) {
+func (h ArpEventHandler) handlePacketNotification(extArpEvent ExtendedArpEvent, eventType Type) {
 	expectedCidrRange := h.expectedCidrRange.String()
 	otherIps, otherMacs := h.getOtherIps(extArpEvent), h.getOtherMacs(extArpEvent)
 	eventJson := extArpEvent.toPacketNotification(eventType, expectedCidrRange, otherIps, otherMacs)
-	h.storeEventFile(eventJson, eventType)
+	h.storeNotification(eventJson, eventType)
 }
 
-func (h ArpEventHandler) handleNewHostEventFile(extArpEvent ExtendedArpEvent, eventType Type) {
+func (h ArpEventHandler) handleHostNotification(extArpEvent ExtendedArpEvent, eventType Type) {
 	expectedCidrRange := h.expectedCidrRange.String()
 	otherIps, otherMacs := h.getOtherIps(extArpEvent), h.getOtherMacs(extArpEvent)
 	eventJson := extArpEvent.toHostNotification(eventType, expectedCidrRange, otherIps, otherMacs)
-	h.storeEventFile(eventJson, eventType)
+	h.storeNotification(eventJson, eventType)
 }
 
 func (h ArpEventHandler) getOtherIps(extArpEvent ExtendedArpEvent) []string {
@@ -175,7 +181,7 @@ func (h ArpEventHandler) getOtherMacs(extArpEvent ExtendedArpEvent) []string {
 	return other
 }
 
-func (h ArpEventHandler) storeEventFile(eventJson Notification, eventType Type) {
+func (h ArpEventHandler) storeNotification(eventJson Notification, eventType Type) {
 	eventFileName := fmt.Sprintf("netreact-%v-%v.json", eventJson.Ts, eventType)
 	eventBytes, err := json.Marshal(eventJson)
 	if err != nil {
