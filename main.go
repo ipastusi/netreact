@@ -63,8 +63,8 @@ func main() {
 
 	var uiApp *UIApp = nil
 	if flags.UiEnabled {
-		uiApp = NewUIApp(hostCache)
-		go LoadUI(uiApp, ifaceName, stateFileName)
+		uiApp = newUIApp(hostCache)
+		go loadUI(uiApp, ifaceName, stateFileName)
 	}
 
 	if stateFileName != "" {
@@ -163,6 +163,6 @@ func processArpEvent(arpEvent event.ArpEvent, hostCache cache.HostCache, filter 
 	handler.Handle(&extArpEvent)
 
 	if uiApp != nil {
-		uiApp.UpsertAndRefreshTable(extArpEvent)
+		uiApp.upsertAndRefreshTable(extArpEvent)
 	}
 }

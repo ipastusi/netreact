@@ -52,7 +52,7 @@ type UIApp struct {
 	data *[]UIEntry
 }
 
-func NewUIApp(cache cache.HostCache) *UIApp {
+func newUIApp(cache cache.HostCache) *UIApp {
 	return &UIApp{
 		TableContentReadOnly: tview.TableContentReadOnly{},
 		app:                  tview.NewApplication(),
@@ -89,7 +89,7 @@ func unixTsToTime(ts int64) string {
 	return time.UnixMilli(ts).Format(timeFormat)
 }
 
-func (uiApp *UIApp) UpsertAndRefreshTable(extArpEvent event.ExtendedArpEvent) {
+func (uiApp *UIApp) upsertAndRefreshTable(extArpEvent event.ExtendedArpEvent) {
 	defer uiApp.app.Draw()
 	ip := extArpEvent.Ip.String()
 	mac := extArpEvent.Mac.String()
@@ -153,7 +153,7 @@ func (uiApp *UIApp) GetColumnCount() int {
 
 // load the UI
 
-func LoadUI(uiApp *UIApp, ifaceName string, stateFileName string) {
+func loadUI(uiApp *UIApp, ifaceName string, stateFileName string) {
 	headerRow := getHeaderRow()
 	table := tview.NewTable().SetEvaluateAllRows(false)
 	table.SetContent(uiApp)
