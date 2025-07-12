@@ -50,14 +50,14 @@ func Test_isExcluded(t *testing.T) {
 func Test_readIPs(t *testing.T) {
 	data := []struct {
 		name string
-		data string
+		data []byte
 		size int
 		ok   bool
 	}{
-		{"one", "10.0.0.1\r", 1, true},
-		{"two", " 10.0.0.1\r\n10.0.0.2 ", 2, true},
-		{"two with trailing new line", "10.0.0.1\n10.0.0.2\n", 2, true},
-		{"invalid", "10.0.0.1\n10.0.0.2\ninvalid", 0, false},
+		{"one", []byte("10.0.0.1\r"), 1, true},
+		{"two", []byte(" 10.0.0.1\r\n10.0.0.2 "), 2, true},
+		{"two with trailing new line", []byte("10.0.0.1\n10.0.0.2\n"), 2, true},
+		{"invalid", []byte("10.0.0.1\n10.0.0.2\ninvalid"), 0, false},
 	}
 
 	for _, d := range data {
@@ -76,14 +76,14 @@ func Test_readIPs(t *testing.T) {
 func Test_readMACs(t *testing.T) {
 	data := []struct {
 		name string
-		data string
+		data []byte
 		size int
 		ok   bool
 	}{
-		{"one", "00:00:00:00:00:01\r", 1, true},
-		{"two", " 00:00:00:00:00:01\r\n00:00:00:00:00:02 ", 2, true},
-		{"two with trailing new line", "00:00:00:00:00:01\n00:00:00:00:00:02\n", 2, true},
-		{"invalid", "00:00:00:00:00:01\n00:00:00:00:00:02\ninvalid", 0, false},
+		{"one", []byte("00:00:00:00:00:01\r"), 1, true},
+		{"two", []byte(" 00:00:00:00:00:01\r\n00:00:00:00:00:02 "), 2, true},
+		{"two with trailing new line", []byte("00:00:00:00:00:01\n00:00:00:00:00:02\n"), 2, true},
+		{"invalid", []byte("00:00:00:00:00:01\n00:00:00:00:00:02\ninvalid"), 0, false},
 	}
 
 	for _, d := range data {
@@ -102,14 +102,14 @@ func Test_readMACs(t *testing.T) {
 func Test_readPairs(t *testing.T) {
 	data := []struct {
 		name string
-		data string
+		data []byte
 		size int
 		ok   bool
 	}{
-		{"one", "10.0.0.1,00:00:00:00:00:01\r", 1, true},
-		{"two", " 10.0.0.1,00:00:00:00:00:01\r\n10.0.0.2,00:00:00:00:00:02 ", 2, true},
-		{"two with trailing new line", "10.0.0.1,00:00:00:00:00:01\n10.0.0.2,00:00:00:00:00:02\n", 2, true},
-		{"invalid", "10.0.0.1,00:00:00:00:00:01\n10.0.0.2,00:00:00:00:00:02\ninvalid", 0, false},
+		{"one", []byte("10.0.0.1,00:00:00:00:00:01\r"), 1, true},
+		{"two", []byte(" 10.0.0.1,00:00:00:00:00:01\r\n10.0.0.2,00:00:00:00:00:02 "), 2, true},
+		{"two with trailing new line", []byte("10.0.0.1,00:00:00:00:00:01\n10.0.0.2,00:00:00:00:00:02\n"), 2, true},
+		{"invalid", []byte("10.0.0.1,00:00:00:00:00:01\n10.0.0.2,00:00:00:00:00:02\ninvalid"), 0, false},
 	}
 
 	for _, d := range data {
@@ -128,12 +128,12 @@ func Test_readPairs(t *testing.T) {
 func Test_isValidIPv4(t *testing.T) {
 	data := []struct {
 		name string
-		ip   string
+		ip   []byte
 		ok   bool
 	}{
-		{"ok", "10.0.0.1", true},
-		{"invalid value", "10.0.1.300", false},
-		{"ipv6", "2001:db8::/32", false},
+		{"ok", []byte("10.0.0.1"), true},
+		{"invalid value", []byte("10.0.1.300"), false},
+		{"ipv6", []byte("2001:db8::/32"), false},
 	}
 
 	for _, d := range data {
@@ -149,12 +149,12 @@ func Test_isValidIPv4(t *testing.T) {
 func Test_isValidMAC(t *testing.T) {
 	data := []struct {
 		name string
-		mac  string
+		mac  []byte
 		ok   bool
 	}{
-		{"ok", "31:0c:8a:cb:8f:00", true},
-		{"invalid value", "31:0c:8a:cb:8f:xd", false},
-		{"truncated", "31:0c:8a:", false},
+		{"ok", []byte("31:0c:8a:cb:8f:00"), true},
+		{"invalid value", []byte("31:0c:8a:cb:8f:xd"), false},
+		{"truncated", []byte("31:0c:8a:"), false},
 	}
 
 	for _, d := range data {

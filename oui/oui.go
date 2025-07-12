@@ -32,5 +32,5 @@ func MacToVendor(mac net.HardwareAddr) string {
 	}
 
 	vendorName := ouiList[i][7:]
-	return strings.TrimRight(vendorName, "\r\n")
+	return strings.TrimSpace(vendorName)
 }

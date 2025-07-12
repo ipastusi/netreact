@@ -99,7 +99,7 @@ func (uiApp *UIApp) upsertAndRefreshTable(extArpEvent event.ExtendedArpEvent) {
 
 	// update, if found
 	hosts := uiApp.data
-	for i := 0; i < len(*hosts); i++ {
+	for i := range *hosts {
 		if (*hosts)[i].IP == ip && (*hosts)[i].MAC == mac {
 			(*hosts)[i].LastTs = lastTs
 			(*hosts)[i].Count = extArpEvent.Count

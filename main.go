@@ -77,19 +77,19 @@ func main() {
 	if flags.ExcludeIPs != "" {
 		data, err := os.ReadFile(flags.ExcludeIPs)
 		exitOnError(err)
-		excludeIPs, err = event.ReadIPs(string(data))
+		excludeIPs, err = event.ReadIPs(data)
 		exitOnError(err)
 	}
 	if flags.ExcludeMACs != "" {
 		data, err := os.ReadFile(flags.ExcludeMACs)
 		exitOnError(err)
-		excludeMACs, err = event.ReadMACs(string(data))
+		excludeMACs, err = event.ReadMACs(data)
 		exitOnError(err)
 	}
 	if flags.ExcludePairs != "" {
 		data, err := os.ReadFile(flags.ExcludePairs)
 		exitOnError(err)
-		excludePairs, err = event.ReadPairs(string(data))
+		excludePairs, err = event.ReadPairs(data)
 		exitOnError(err)
 	}
 
