@@ -75,21 +75,21 @@ func main() {
 
 	var excludeIPs, excludeMACs, excludePairs map[string]struct{}
 	if flags.ExcludeIPs != "" {
-		data, err := os.ReadFile(flags.ExcludeIPs)
+		file, err := os.Open(flags.ExcludeIPs)
 		exitOnError(err)
-		excludeIPs, err = event.ReadIPs(data)
+		excludeIPs, err = event.ReadIPs(file)
 		exitOnError(err)
 	}
 	if flags.ExcludeMACs != "" {
-		data, err := os.ReadFile(flags.ExcludeMACs)
+		file, err := os.Open(flags.ExcludeMACs)
 		exitOnError(err)
-		excludeMACs, err = event.ReadMACs(data)
+		excludeMACs, err = event.ReadMACs(file)
 		exitOnError(err)
 	}
 	if flags.ExcludePairs != "" {
-		data, err := os.ReadFile(flags.ExcludePairs)
+		file, err := os.Open(flags.ExcludePairs)
 		exitOnError(err)
-		excludePairs, err = event.ReadPairs(data)
+		excludePairs, err = event.ReadPairs(file)
 		exitOnError(err)
 	}
 
