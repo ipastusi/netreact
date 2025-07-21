@@ -77,29 +77,30 @@ executions.
 
 ## MAC vendor lookup
 
-Netreact ships with its own embedded MAC OUI database for MAC vendor lookup, based on publicly available MA-L data (see [oui.txt](oui/oui.txt)).
+Netreact ships with its own embedded MAC OUI database for MAC vendor lookup, based on publicly available MA-L data (
+see [oui.txt](oui/oui.txt)).
 No external files or online services are required at runtime.
 
 ## Event files
 
 Netreact can generate the following types of events:
 
-| Event type                    | Event code | Packet event filter | Host event filter |
-|-------------------------------|------------|---------------------|-------------------|
-| NEW_PACKET                    | 100        | 1000000             |                   |
-| NEW_LINK_LOCAL_UNICAST_PACKET | 101        | 0100000             |                   |
-| NEW_UNSPECIFIED_PACKET        | 102        | 0010000             |                   |
-| NEW_BROADCAST_PACKET          | 103        | 0001000             |                   |
-| NEW_UNEXPECTED_IP_PACKET      | 104        | 0000100             |                   |
-| NEW_IP_FOR_MAC_PACKET         | 105        | 0000010             |                   |
-| NEW_MAC_FOR_IP_PACKET         | 106        | 0000001             |                   |
-| NEW_HOST                      | 200        |                     | 1000000           |
-| NEW_LINK_LOCAL_UNICAST_HOST   | 201        |                     | 0100000           |
-| NEW_UNSPECIFIED_HOST          | 202        |                     | 0010000           |
-| NEW_BROADCAST_HOST            | 203        |                     | 0001000           |
-| NEW_UNEXPECTED_IP_HOST        | 204        |                     | 0000100           |
-| NEW_IP_FOR_MAC_HOST           | 205        |                     | 0000010           |
-| NEW_MAC_FOR_IP_HOST           | 206        |                     | 0000001           |
+| Event type                    | Event code | Packet event filter | Host event filter | Description                                                                                               |
+|-------------------------------|------------|---------------------|-------------------|-----------------------------------------------------------------------------------------------------------|
+| NEW_PACKET                    | 100        | 1000000             |                   | New ARP packet                                                                                            |
+| NEW_LINK_LOCAL_UNICAST_PACKET | 101        | 0100000             |                   | New ARP packet from a link-local address (169.254.0.0/16)                                                 |
+| NEW_UNSPECIFIED_PACKET        | 102        | 0010000             |                   | New ARP packet from unspecified address (0.0.0.0)                                                         |
+| NEW_BROADCAST_PACKET          | 103        | 0001000             |                   | New ARP packet from broadcast address (255.255.255.255)                                                   |
+| NEW_UNEXPECTED_IP_PACKET      | 104        | 0000100             |                   | New ARP packet from unexpected address, other than 169.254.0.0/16, 0.0.0.0 or 255.255.255.255             |
+| NEW_IP_FOR_MAC_PACKET         | 105        | 0000010             |                   | New ARP packet with the same MAC but different IP address than recorded previously                        |
+| NEW_MAC_FOR_IP_PACKET         | 106        | 0000001             |                   | New ARP packet with the same IP but different MAC address than recorded previously                        |
+| NEW_HOST                      | 200        |                     | 1000000           | ARP packet for a new host (host is identified as an IP-MAC address pair)                                  |
+| NEW_LINK_LOCAL_UNICAST_HOST   | 201        |                     | 0100000           | ARP packet from a new host with a link-local address (169.254.0.0/16)                                     |
+| NEW_UNSPECIFIED_HOST          | 202        |                     | 0010000           | ARP packet from a new host with an unspecified address (0.0.0.0)                                          |
+| NEW_BROADCAST_HOST            | 203        |                     | 0001000           | ARP packet from a new host with a broadcast address (255.255.255.255)                                     |
+| NEW_UNEXPECTED_IP_HOST        | 204        |                     | 0000100           | ARP packet from a new host with unexpected address, other than 169.254.0.0/16, 0.0.0.0 or 255.255.255.255 |                                                                                              |
+| NEW_IP_FOR_MAC_HOST           | 205        |                     | 0000010           | ARP packet from a new host with the same MAC but different IP address than recorded previously            |                                                                                                          |
+| NEW_MAC_FOR_IP_HOST           | 206        |                     | 0000001           | ARP packet from a new host with the same IP but different MAC address than recorded previously            |
 
 Event codes are used in generated filenames only.
 
@@ -161,10 +162,12 @@ Event details will depend on the event type:
 - `otherIps` - Other IP addresses recorded previously for this MAC.
 - `otherMacs` - Other MAC addresses recorded previously for this IP.
 
-## Event handling
+## FAQ
 
-Event files offer you the ability to trigger custom responses to the ARP events. You can implement arbitrary event file detection
-mechanism and response logic.
+### How can I handle events generated by Netreact?
+
+Event files generated by Netreact offer you the ability to trigger custom responses to the ARP events. You can implement arbitrary event
+file detection mechanism and response logic.
 
 On Linux you might want to use `inotifywait` to detect event file creation:
 
@@ -188,6 +191,49 @@ fswatch --event Created out/ | xargs -n 1 -I _ echo _
 /path/to/netreact/out/netreact-1747995771602-100.json
 ```
 
-If you are using Netreact on macOS with automatic cleanup of generated event files enabled using `-a` flag, and `fswatch` incorrectly 
-reports file deletion as `Created` events, you might want to increase the cleanup delay to e.g. 30 seconds. See 
+### Why automatic event file cleanup on macOS makes fswatch incorrectly detect file deletion as file creation?
+
+If you are using Netreact on macOS with automatic cleanup of generated event files enabled using `-a` flag, and `fswatch` incorrectly
+reports file deletion as `Created` events, you might want to increase the cleanup delay to e.g. 30 seconds. See
 [fswatch #144](https://github.com/emcrisostomo/fswatch/issues/144#issuecomment-264135666).
+
+### Netreact doesn't detect any ARP traffic, unless I start tcpdump on the same machine. Why is that?
+
+By default, `tcpdump` puts the interface into promiscuous mode. If this makes Netreact start detecting ARP traffic, you will likely want to
+use the Netreact `-p` flag to put the interface into promiscuous mode without having to use `tcpdump`.
+
+### How can I leave Netreact running on the remote host, disconnect, and reconnect to that remote session again?
+
+You can use the `screen` tool:
+
+```
+# connect to the remote host where you want to run Netreact
+ssh ...
+
+# run a screen command, this is what will give you persistence between reconnections
+screen
+
+# start Netreact
+sudo ./netreact -i wlan0 -d out -fp "0000000" -fh "0000000" -s nrstate.json -p
+
+# detach from the screen session
+CTRL+A, D
+
+# disconnect from the remote host
+exit
+
+# reconnect to the remote host
+ssh ...
+
+# reconnect to your screen session
+screen -r
+
+# exit Netreact, if you want to
+ESC
+
+# end your screen session
+CTRL+D
+
+# disconnect from the remote host again
+exit
+```
