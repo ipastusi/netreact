@@ -85,8 +85,9 @@ func processFlags(flags Flags) error {
 		flags.EventDir = absEventDirPath
 	}
 
-	if len(flags.PacketEventFilter) != 7 {
-		return fmt.Errorf("incorrect length of packet event filter: %v", len(flags.PacketEventFilter))
+	expectedEventFilterLen := 7
+	if len(flags.PacketEventFilter) != expectedEventFilterLen {
+		return fmt.Errorf("incorrect length of packet event filter: %v, expected: %v", len(flags.PacketEventFilter), expectedEventFilterLen)
 	}
 	for i, char := range flags.PacketEventFilter {
 		if char != '0' && char != '1' {
