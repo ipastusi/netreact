@@ -214,7 +214,7 @@ ssh ...
 screen
 
 # start Netreact
-sudo ./netreact -i wlan0 -d out -fp "0000000" -fh "0000000" -s nrstate.json -p
+sudo ./netreact ...
 
 # detach from the screen session
 CTRL+A, D
