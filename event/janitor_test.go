@@ -21,7 +21,13 @@ func Test_newEventJanitor(t *testing.T) {
 
 	// should not get removed by the janitor
 	notMatchingFileName := fmt.Sprintf("../out/netreact-%v-100.json", nowPlus2Secs)
-	defer os.Remove(notMatchingFileName)
+	defer func() {
+		err = os.Remove(notMatchingFileName)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
+
 	err = os.WriteFile(notMatchingFileName, []byte(`{"match": false}`), 0644)
 	if err != nil {
 		t.Fatal("unexpected error creating a test file")

@@ -90,7 +90,7 @@ func unixTsToTime(ts int64) string {
 }
 
 func (uiApp *UIApp) upsertAndRefreshTable(extArpEvent event.ExtendedArpEvent) {
-	defer uiApp.app.Draw()
+	defer func() { _ = uiApp.app.Draw() }()
 	ip := extArpEvent.Ip.String()
 	mac := extArpEvent.Mac.String()
 	firstTs := unixTsToTime(extArpEvent.FirstTs)
