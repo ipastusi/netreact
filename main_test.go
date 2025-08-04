@@ -62,18 +62,18 @@ func Test_processArpEvents(t *testing.T) {
 		expectedEventCodes []event.Type
 		excluded           bool
 	}{
-		{event.ArpEvent{net.ParseIP("192.168.1.100"), rpiMac, time.Now().UnixMilli() + 0}, 1, 1, "Raspberry Pi (Trading) Ltd", []event.Type{event.NewPacket, event.NewHost}, false},
-		{event.ArpEvent{net.ParseIP("192.168.1.200"), unknownMac, time.Now().UnixMilli() + 1}, 2, 1, "Unknown", []event.Type{event.NewPacket, event.NewHost}, false},
-		{event.ArpEvent{net.ParseIP("192.168.1.100"), rpiMac, time.Now().UnixMilli() + 2}, 2, 2, "Raspberry Pi (Trading) Ltd", []event.Type{event.NewPacket}, false},
-		{event.ArpEvent{net.ParseIP("192.168.1.200"), unknownMac, time.Now().UnixMilli() + 3}, 2, 2, "Unknown", []event.Type{event.NewPacket}, false},
-		{event.ArpEvent{net.ParseIP("0.0.0.0"), hpMac, time.Now().UnixMilli() + 4}, 3, 1, "Hewlett Packard", []event.Type{event.NewPacket, event.NewHost, event.NewUnspecifiedPacket, event.NewUnspecifiedHost}, false},
-		{event.ArpEvent{net.ParseIP("169.254.10.20"), dellMac, time.Now().UnixMilli() + 5}, 4, 1, "Dell Inc.", []event.Type{event.NewPacket, event.NewHost, event.NewLinkLocalUnicastPacket, event.NewLinkLocalUnicastHost}, false},
-		{event.ArpEvent{net.ParseIP("255.255.255.255"), unknownMac, time.Now().UnixMilli() + 6}, 5, 1, "Unknown", []event.Type{event.NewPacket, event.NewHost, event.NewBroadcastPacket, event.NewBroadcastHost, event.NewIpForMacPacket, event.NewIpForMacHost}, false},
-		{event.ArpEvent{net.ParseIP("192.168.2.1"), unknownMac, time.Now().UnixMilli() + 7}, 6, 1, "Unknown", []event.Type{event.NewPacket, event.NewHost, event.NewUnexpectedIpPacket, event.NewUnexpectedIpHost, event.NewIpForMacPacket, event.NewIpForMacHost}, false},
-		{event.ArpEvent{net.ParseIP("0.0.0.0"), hpMac2, time.Now().UnixMilli() + 8}, 7, 1, "Hewlett Packard", []event.Type{event.NewPacket, event.NewHost, event.NewUnspecifiedPacket, event.NewUnspecifiedHost, event.NewMacForIpPacket, event.NewMacForIpHost}, false},
-		{event.ArpEvent{net.ParseIP("192.168.1.111"), unknownMac, time.Now().UnixMilli() + 9}, 7, 0, "Unknown", []event.Type{}, true},
-		{event.ArpEvent{net.ParseIP("192.168.1.111"), excludedMac, time.Now().UnixMilli() + 10}, 7, 0, "Unknown", []event.Type{}, true},
-		{event.ArpEvent{net.ParseIP("192.168.1.112"), excludedMac, time.Now().UnixMilli() + 11}, 7, 0, "Unknown", []event.Type{}, true},
+		{event.ArpEvent{Ip: net.ParseIP("192.168.1.100"), Mac: rpiMac, Ts: time.Now().UnixMilli() + 0}, 1, 1, "Raspberry Pi (Trading) Ltd", []event.Type{event.NewPacket, event.NewHost}, false},
+		{event.ArpEvent{Ip: net.ParseIP("192.168.1.200"), Mac: unknownMac, Ts: time.Now().UnixMilli() + 1}, 2, 1, "Unknown", []event.Type{event.NewPacket, event.NewHost}, false},
+		{event.ArpEvent{Ip: net.ParseIP("192.168.1.100"), Mac: rpiMac, Ts: time.Now().UnixMilli() + 2}, 2, 2, "Raspberry Pi (Trading) Ltd", []event.Type{event.NewPacket}, false},
+		{event.ArpEvent{Ip: net.ParseIP("192.168.1.200"), Mac: unknownMac, Ts: time.Now().UnixMilli() + 3}, 2, 2, "Unknown", []event.Type{event.NewPacket}, false},
+		{event.ArpEvent{Ip: net.ParseIP("0.0.0.0"), Mac: hpMac, Ts: time.Now().UnixMilli() + 4}, 3, 1, "Hewlett Packard", []event.Type{event.NewPacket, event.NewHost, event.NewUnspecifiedPacket, event.NewUnspecifiedHost}, false},
+		{event.ArpEvent{Ip: net.ParseIP("169.254.10.20"), Mac: dellMac, Ts: time.Now().UnixMilli() + 5}, 4, 1, "Dell Inc.", []event.Type{event.NewPacket, event.NewHost, event.NewLinkLocalUnicastPacket, event.NewLinkLocalUnicastHost}, false},
+		{event.ArpEvent{Ip: net.ParseIP("255.255.255.255"), Mac: unknownMac, Ts: time.Now().UnixMilli() + 6}, 5, 1, "Unknown", []event.Type{event.NewPacket, event.NewHost, event.NewBroadcastPacket, event.NewBroadcastHost, event.NewIpForMacPacket, event.NewIpForMacHost}, false},
+		{event.ArpEvent{Ip: net.ParseIP("192.168.2.1"), Mac: unknownMac, Ts: time.Now().UnixMilli() + 7}, 6, 1, "Unknown", []event.Type{event.NewPacket, event.NewHost, event.NewUnexpectedIpPacket, event.NewUnexpectedIpHost, event.NewIpForMacPacket, event.NewIpForMacHost}, false},
+		{event.ArpEvent{Ip: net.ParseIP("0.0.0.0"), Mac: hpMac2, Ts: time.Now().UnixMilli() + 8}, 7, 1, "Hewlett Packard", []event.Type{event.NewPacket, event.NewHost, event.NewUnspecifiedPacket, event.NewUnspecifiedHost, event.NewMacForIpPacket, event.NewMacForIpHost}, false},
+		{event.ArpEvent{Ip: net.ParseIP("192.168.1.111"), Mac: unknownMac, Ts: time.Now().UnixMilli() + 9}, 7, 0, "Unknown", []event.Type{}, true},
+		{event.ArpEvent{Ip: net.ParseIP("192.168.1.111"), Mac: excludedMac, Ts: time.Now().UnixMilli() + 10}, 7, 0, "Unknown", []event.Type{}, true},
+		{event.ArpEvent{Ip: net.ParseIP("192.168.1.112"), Mac: excludedMac, Ts: time.Now().UnixMilli() + 11}, 7, 0, "Unknown", []event.Type{}, true},
 	}
 
 	for i, e := range events {

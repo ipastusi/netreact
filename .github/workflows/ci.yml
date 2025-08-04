@@ -30,6 +30,8 @@ jobs:
           go-version: '1.24.0'
       - name: '[Linux only] Install OS packages'
         run: if [ "${RUNNER_OS}" == "Linux" ]; then sudo apt-get update; sudo apt-get install -y libpcap-dev; fi
+      - name: Lint
+        run: go vet ./...
       - name: Build
         run: go build
       - name: Test
