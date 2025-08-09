@@ -73,24 +73,34 @@ func main() {
 		go handleSignals(sig, hostCache, stateFileName)
 	}
 
+	closeFile := func(file *os.File) {
+		closeErr := file.Close()
+		if closeErr != nil {
+			fmt.Println(closeErr)
+		}
+	}
+
 	var excludeIPs, excludeMACs, excludePairs map[string]struct{}
 	if flags.ExcludeIPs != "" {
-		file, err := os.Open(flags.ExcludeIPs)
+		ipFlagFile, err := os.Open(flags.ExcludeIPs)
 		exitOnError(err)
-		excludeIPs, err = event.ReadIPs(file)
+		excludeIPs, err = event.ReadIPs(ipFlagFile)
 		exitOnError(err)
+		closeFile(ipFlagFile)
 	}
 	if flags.ExcludeMACs != "" {
-		file, err := os.Open(flags.ExcludeMACs)
+		macFlagFile, err := os.Open(flags.ExcludeMACs)
 		exitOnError(err)
-		excludeMACs, err = event.ReadMACs(file)
+		excludeMACs, err = event.ReadMACs(macFlagFile)
 		exitOnError(err)
+		closeFile(macFlagFile)
 	}
 	if flags.ExcludePairs != "" {
-		file, err := os.Open(flags.ExcludePairs)
+		pairsFlagFile, err := os.Open(flags.ExcludePairs)
 		exitOnError(err)
-		excludePairs, err = event.ReadPairs(file)
+		excludePairs, err = event.ReadPairs(pairsFlagFile)
 		exitOnError(err)
+		closeFile(pairsFlagFile)
 	}
 
 	logHandler := slog.NewJSONHandler(logFile, nil)

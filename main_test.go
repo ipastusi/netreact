@@ -171,7 +171,7 @@ func Test_processArpEvents(t *testing.T) {
 }
 
 func getLogHandler(t *testing.T) slog.Handler {
-	logFile, err := os.OpenFile(testLogFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	logFile, err := os.OpenFile(testLogFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		t.Fatal("error opening log file:", err)
 	}

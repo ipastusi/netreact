@@ -189,7 +189,7 @@ func (h ArpEventHandler) storeNotification(eventJson Notification, eventType Typ
 		return
 	}
 	eventFilePath := filepath.Join(h.eventDir, eventFileName)
-	err = os.WriteFile(eventFilePath, eventBytes, 0644)
+	err = syncWriteToFile(eventFilePath, eventBytes)
 	if err != nil {
 		h.logError(err)
 	}
@@ -199,4 +199,18 @@ func (h ArpEventHandler) logError(err error) {
 	now := time.UnixMilli(time.Now().Unix())
 	record := slog.NewRecord(now, slog.LevelError, err.Error(), 0)
 	_ = h.logHandler.Handle(nil, record)
+}
+
+func syncWriteToFile(filename string, data []byte) error {
+	// put extra effort into making sure the events are delivered without delay
+	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|os.O_SYNC, 0644)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Write(data)
+	if err1 := f.Close(); err1 != nil && err == nil {
+		err = err1
+	}
+	return err
 }
