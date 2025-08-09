@@ -6,6 +6,8 @@ import (
 )
 
 func Test_ValidateState(t *testing.T) {
+	t.Parallel()
+
 	stateBytes := []byte(`{
 		"items": [
     		{
@@ -24,6 +26,8 @@ func Test_ValidateState(t *testing.T) {
 }
 
 func Test_ValidateStateEmpty(t *testing.T) {
+	t.Parallel()
+
 	stateBytes := []byte(`{
         "items": []
     }`)
@@ -35,6 +39,8 @@ func Test_ValidateStateEmpty(t *testing.T) {
 }
 
 func Test_ValidateStateInvalid(t *testing.T) {
+	t.Parallel()
+
 	stateBytes := []byte(`{
 		"items": [
     		{

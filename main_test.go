@@ -18,6 +18,11 @@ const (
 )
 
 func Test_processArpEvents(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping long-running test")
+	}
+
 	// cleanup generated files
 	defer func() {
 		if _, err := os.Stat(testLogFileName); err == nil {
@@ -30,11 +35,6 @@ func Test_processArpEvents(t *testing.T) {
 
 	eventDir := "out"
 	logHandler := getLogHandler(t)
-	janitor, err := event.NewEventJanitor(logHandler, eventDir, 1)
-	if err != nil {
-		t.Fatal("unexpected error creating event janitor")
-	}
-	janitor.Start()
 
 	rpiMac, _ := net.ParseMAC("2c:cf:67:0c:6c:a4")
 	unknownMac, _ := net.ParseMAC("31:0c:8a:cb:8f:ab")
@@ -166,8 +166,12 @@ func Test_processArpEvents(t *testing.T) {
 		}
 	}
 
-	// let the janitor do its job
-	time.Sleep(time.Duration(2500) * time.Millisecond)
+	// use janitor's logic to do the cleanup
+	janitor, err := event.NewEventJanitor(logHandler, eventDir, 0)
+	if err != nil {
+		t.Fatal("unexpected error creating event janitor")
+	}
+	janitor.CleanupEventFiles()
 }
 
 func getLogHandler(t *testing.T) slog.Handler {

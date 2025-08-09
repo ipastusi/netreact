@@ -39,12 +39,12 @@ func (j EventJanitor) Start() {
 		for {
 			duration := time.Duration(j.delaySec) * time.Second
 			time.Sleep(duration)
-			j.cleanupEventFiles()
+			j.CleanupEventFiles()
 		}
 	}()
 }
 
-func (j EventJanitor) cleanupEventFiles() {
+func (j EventJanitor) CleanupEventFiles() {
 	files, _ := filepath.Glob(j.pattern)
 	for _, file := range files {
 		re := regexp.MustCompile("netreact-(?P<timestamp>[0-9]{13})-[0-9]{3}.json$")
@@ -59,8 +59,8 @@ func (j EventJanitor) cleanupEventFiles() {
 		timestampStr := matches[timestampIdx]
 		timestamp, _ := strconv.ParseInt(timestampStr, 10, 64)
 
-		now := time.Now().UnixMilli()
-		boundaryTimestamp := now - int64(j.delaySec)*1000
+		nowMillis := time.Now().UnixMilli()
+		boundaryTimestamp := nowMillis - int64(j.delaySec)*1000
 		if timestamp > boundaryTimestamp {
 			// file is too fresh
 			continue

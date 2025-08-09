@@ -9,6 +9,8 @@ import (
 )
 
 func Test_FromAppState(t *testing.T) {
+	t.Parallel()
+
 	appState := state.NewAppState()
 	appState.Items = []state.Item{
 		{
@@ -57,6 +59,8 @@ func Test_FromAppState(t *testing.T) {
 }
 
 func Test_Update(t *testing.T) {
+	t.Parallel()
+
 	hostCache := NewHostCache()
 
 	// init host
@@ -114,6 +118,8 @@ func Test_Update(t *testing.T) {
 }
 
 func Test_ToAppState(t *testing.T) {
+	t.Parallel()
+
 	hostCache := NewHostCache()
 
 	hostKeyA := keyFromIpMac("10.0.0.1", "00:00:00:01:02:03")
@@ -159,6 +165,8 @@ func Test_ToAppState(t *testing.T) {
 }
 
 func Test_ToAppStateEmpty(t *testing.T) {
+	t.Parallel()
+
 	hostCache := NewHostCache()
 	appState := hostCache.ToAppState()
 	if appState.Items == nil {
@@ -167,6 +175,8 @@ func Test_ToAppStateEmpty(t *testing.T) {
 }
 
 func Test_IpAndMacMaps(t *testing.T) {
+	t.Parallel()
+
 	hostCache := NewHostCache()
 
 	mac1, _ := net.ParseMAC("00:00:00:00:00:01")
