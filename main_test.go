@@ -18,7 +18,6 @@ const (
 )
 
 func Test_processArpEvents(t *testing.T) {
-	t.Parallel()
 	if testing.Short() {
 		t.Skip("skipping long-running test")
 	}
@@ -166,7 +165,8 @@ func Test_processArpEvents(t *testing.T) {
 		}
 	}
 
-	// use janitor's logic to do the cleanup
+	// use janitor's logic to do the cleanup, but account for its min 1s file timestamp boundary
+	time.Sleep(time.Second)
 	janitor, err := event.NewEventJanitor(logHandler, eventDir, 0)
 	if err != nil {
 		t.Fatal("unexpected error creating event janitor")

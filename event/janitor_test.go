@@ -8,13 +8,12 @@ import (
 )
 
 func Test_newEventJanitor(t *testing.T) {
-	t.Parallel()
 	if testing.Short() {
 		t.Skip("skipping long-running test")
 	}
 
 	nowMillis := time.Now().UnixMilli()
-	nowPlus2Secs := nowMillis + 1500
+	nowPlus2Secs := nowMillis + 2000
 
 	// should get removed by the janitor
 	matchingFileName := fmt.Sprintf("../out/netreact-%v-100.json", nowMillis)
