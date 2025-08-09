@@ -37,7 +37,8 @@ func NewEventJanitor(log slog.Handler, eventDir string, delaySec uint) (EventJan
 func (j EventJanitor) Start() {
 	go func() {
 		for {
-			<-time.After(time.Duration(j.delaySec) * time.Second)
+			duration := time.Duration(j.delaySec) * time.Second
+			time.Sleep(duration)
 			j.cleanupEventFiles()
 		}
 	}()
