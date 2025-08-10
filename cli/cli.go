@@ -14,9 +14,7 @@ type Flags struct {
 	Filter            string
 	LogFileName       string
 	StateFileName     string
-	PromiscMode       bool
 	EventDir          string
-	UiEnabled         bool
 	HostEventFilter   string
 	PacketEventFilter string
 	ExpectedCidrRange string
@@ -24,6 +22,8 @@ type Flags struct {
 	ExcludeMACs       string
 	ExcludePairs      string
 	AutoCleanupDelay  uint
+	PromiscMode       bool
+	UiEnabled         bool
 }
 
 func GetFlags() (Flags, error) {
@@ -60,11 +60,11 @@ func GetFlags() (Flags, error) {
 		AutoCleanupDelay:  *autoCleanupDelay,
 	}
 
-	err := processFlags(flags)
+	err := CheckFlags(flags)
 	return flags, err
 }
 
-func processFlags(flags Flags) error {
+func CheckFlags(flags Flags) error {
 	var pwd, absEventDirPath string
 	if flags.IfaceName == "" {
 		return fmt.Errorf("no interface name provided")

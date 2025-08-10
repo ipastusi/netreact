@@ -42,7 +42,7 @@ func ReadIPs(reader io.Reader) (map[string]struct{}, error) {
 		line := scanner.Text()
 		trimmedLine := strings.Trim(line, " ")
 		trimmedLine = strings.TrimRight(trimmedLine, "\r\n")
-		if !isValidIPv4(trimmedLine) {
+		if !IsValidIPv4(trimmedLine) {
 			return nil, fmt.Errorf("invalid IP address: %v", line)
 		}
 		ips[trimmedLine] = struct{}{}
@@ -59,7 +59,7 @@ func ReadMACs(reader io.Reader) (map[string]struct{}, error) {
 		line := scanner.Text()
 		trimmedLine := strings.Trim(line, " ")
 		trimmedLine = strings.TrimRight(trimmedLine, "\r\n")
-		if !isValidMAC(trimmedLine) {
+		if !IsValidMAC(trimmedLine) {
 			return nil, fmt.Errorf("invalid MAC address: %v", line)
 		}
 		macs[trimmedLine] = struct{}{}
@@ -83,9 +83,9 @@ func ReadPairs(reader io.Reader) (map[string]struct{}, error) {
 		}
 
 		ip, mac := parts[0], parts[1]
-		if !isValidIPv4(ip) {
+		if !IsValidIPv4(ip) {
 			return nil, fmt.Errorf("invalid IP address: %v", line)
-		} else if !isValidMAC(mac) {
+		} else if !IsValidMAC(mac) {
 			return nil, fmt.Errorf("invalid MAC address: %v", line)
 		}
 
@@ -96,14 +96,14 @@ func ReadPairs(reader io.Reader) (map[string]struct{}, error) {
 	return pairs, nil
 }
 
-func isValidIPv4(ip string) bool {
+func IsValidIPv4(ip string) bool {
 	if addr := net.ParseIP(ip); addr == nil || addr.To4() == nil {
 		return false
 	}
 	return true
 }
 
-func isValidMAC(mac string) bool {
+func IsValidMAC(mac string) bool {
 	if _, err := net.ParseMAC(mac); err != nil {
 		return false
 	}

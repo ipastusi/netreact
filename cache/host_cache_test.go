@@ -1,6 +1,7 @@
-package cache
+package cache_test
 
 import (
+	"github.com/ipastusi/netreact/cache"
 	"github.com/ipastusi/netreact/event"
 	"github.com/ipastusi/netreact/state"
 	"net"
@@ -27,14 +28,14 @@ func Test_FromAppState(t *testing.T) {
 			Count:   1,
 		},
 	}
-	hostCache := FromAppState(appState)
+	hostCache := cache.FromAppState(appState)
 
-	hostKey := keyFromIpMac("10.0.0.1", "00:00:00:01:02:03")
+	hostKey := cache.KeyFromIpMac("10.0.0.1", "00:00:00:01:02:03")
 	hostDetails, ok := hostCache.Items[hostKey]
 	if !ok {
 		t.Fatal("host not found")
 	}
-	expectedHostDetails := HostDetails{
+	expectedHostDetails := cache.HostDetails{
 		FirstTs: 1749913040850,
 		LastTs:  1749913040850,
 		Count:   1,
@@ -43,12 +44,12 @@ func Test_FromAppState(t *testing.T) {
 		t.Fatalf("unexpected host details, expected: %v, actual: %v", expectedHostDetails, hostDetails)
 	}
 
-	hostKey = keyFromIpMac("10.0.0.2", "00:00:00:04:05:06")
+	hostKey = cache.KeyFromIpMac("10.0.0.2", "00:00:00:04:05:06")
 	hostDetails, ok = hostCache.Items[hostKey]
 	if !ok {
 		t.Fatal("host not found")
 	}
-	expectedHostDetails = HostDetails{
+	expectedHostDetails = cache.HostDetails{
 		FirstTs: 1749913040852,
 		LastTs:  1749913040852,
 		Count:   1,
@@ -61,7 +62,7 @@ func Test_FromAppState(t *testing.T) {
 func Test_Update(t *testing.T) {
 	t.Parallel()
 
-	hostCache := NewHostCache()
+	hostCache := cache.NewHostCache()
 
 	// init host
 	hostMacA, _ := net.ParseMAC("00:00:00:01:02:03")
@@ -94,9 +95,9 @@ func Test_Update(t *testing.T) {
 		t.Fatal("unexpected host cache size:", hostCacheSize)
 	}
 
-	hostKeyA := keyFromIpMac("10.0.0.1", "00:00:00:01:02:03")
+	hostKeyA := cache.KeyFromIpMac("10.0.0.1", "00:00:00:01:02:03")
 	hostDetailsA := hostCache.Items[hostKeyA]
-	expectedHostDetailsA := HostDetails{
+	expectedHostDetailsA := cache.HostDetails{
 		FirstTs: 1749913040850,
 		LastTs:  1749913040851,
 		Count:   2,
@@ -105,9 +106,9 @@ func Test_Update(t *testing.T) {
 		t.Fatalf("unexpected host details, expected: %v, actual: %v", expectedHostDetailsA, hostDetailsA)
 	}
 
-	hostKeyB := keyFromIpMac("10.0.0.2", "00:00:00:04:05:06")
+	hostKeyB := cache.KeyFromIpMac("10.0.0.2", "00:00:00:04:05:06")
 	hostDetailsB := hostCache.Items[hostKeyB]
-	expectedHostDetailsB := HostDetails{
+	expectedHostDetailsB := cache.HostDetails{
 		FirstTs: 1749913040852,
 		LastTs:  1749913040852,
 		Count:   1,
@@ -120,17 +121,17 @@ func Test_Update(t *testing.T) {
 func Test_ToAppState(t *testing.T) {
 	t.Parallel()
 
-	hostCache := NewHostCache()
+	hostCache := cache.NewHostCache()
 
-	hostKeyA := keyFromIpMac("10.0.0.1", "00:00:00:01:02:03")
-	hostCache.Items[hostKeyA] = HostDetails{
+	hostKeyA := cache.KeyFromIpMac("10.0.0.1", "00:00:00:01:02:03")
+	hostCache.Items[hostKeyA] = cache.HostDetails{
 		FirstTs: 1749913040850,
 		LastTs:  1749913040851,
 		Count:   2,
 	}
 
-	hostKeyB := keyFromIpMac("10.0.0.2", "00:00:00:04:05:06")
-	hostCache.Items[hostKeyB] = HostDetails{
+	hostKeyB := cache.KeyFromIpMac("10.0.0.2", "00:00:00:04:05:06")
+	hostCache.Items[hostKeyB] = cache.HostDetails{
 		FirstTs: 1749913040852,
 		LastTs:  1749913040852,
 		Count:   1,
@@ -167,7 +168,7 @@ func Test_ToAppState(t *testing.T) {
 func Test_ToAppStateEmpty(t *testing.T) {
 	t.Parallel()
 
-	hostCache := NewHostCache()
+	hostCache := cache.NewHostCache()
 	appState := hostCache.ToAppState()
 	if appState.Items == nil {
 		t.Fatal("unexpected nil Items, should be empty")
@@ -177,7 +178,7 @@ func Test_ToAppStateEmpty(t *testing.T) {
 func Test_IpAndMacMaps(t *testing.T) {
 	t.Parallel()
 
-	hostCache := NewHostCache()
+	hostCache := cache.NewHostCache()
 
 	mac1, _ := net.ParseMAC("00:00:00:00:00:01")
 	mac2, _ := net.ParseMAC("00:00:00:00:00:02")

@@ -1,7 +1,8 @@
-package event
+package event_test
 
 import (
 	"fmt"
+	"github.com/ipastusi/netreact/event"
 	"os"
 	"testing"
 	"time"
@@ -24,12 +25,12 @@ func Test_newEventJanitor(t *testing.T) {
 
 	// should not get removed by the janitor
 	notMatchingFileName := fmt.Sprintf("../out/netreact-%v-100.json", nowPlus2Secs)
-	defer func() {
+	t.Cleanup(func() {
 		err = os.Remove(notMatchingFileName)
 		if err != nil {
-			fmt.Println(err)
+			t.Fatal(err)
 		}
-	}()
+	})
 
 	err = os.WriteFile(notMatchingFileName, []byte(`{"match": false}`), 0644)
 	if err != nil {
@@ -38,7 +39,7 @@ func Test_newEventJanitor(t *testing.T) {
 
 	// CleanupEventFiles matching files
 	delaySec := uint(1)
-	janitor, err := NewEventJanitor(nil, "../out", delaySec)
+	janitor, err := event.NewEventJanitor(nil, "../out", delaySec)
 	if err != nil {
 		t.Fatal("unexpected error creating event janitor")
 	}

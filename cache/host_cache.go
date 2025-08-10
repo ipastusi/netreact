@@ -20,7 +20,7 @@ func NewHostCache() HostCache {
 func FromAppState(appState state.AppState) HostCache {
 	cache := NewHostCache()
 	for _, stateItem := range appState.Items {
-		key := keyFromIpMac(stateItem.Ip, stateItem.Mac)
+		key := KeyFromIpMac(stateItem.Ip, stateItem.Mac)
 		cache.Items[key] = HostDetails{
 			FirstTs: stateItem.FirstTs,
 			LastTs:  stateItem.LastTs,
@@ -33,7 +33,7 @@ func FromAppState(appState state.AppState) HostCache {
 func (c *HostCache) ToAppState() state.AppState {
 	appState := state.NewAppState()
 	for cacheKey, cacheValue := range c.Items {
-		ip, mac := cacheKey.toIpMac()
+		ip, mac := cacheKey.ToIpMac()
 		stateItem := state.Item{
 			Ip:      ip,
 			Mac:     mac,

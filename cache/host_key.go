@@ -14,14 +14,14 @@ func KeyFromArpEvent(arpEvent event.ArpEvent) HostKey {
 	return key
 }
 
-func keyFromIpMac(ip string, mac string) HostKey {
+func KeyFromIpMac(ip string, mac string) HostKey {
 	keyBytes := net.ParseIP(ip).To4()
 	macBytes, _ := net.ParseMAC(mac)
 	keyBytes = append(keyBytes, macBytes...)
 	return HostKey(keyBytes)
 }
 
-func (k HostKey) toIpMac() (string, string) {
+func (k HostKey) ToIpMac() (string, string) {
 	ipBytes, macBytes := k.IpBytes(), k.MacBytes()
 	ip := net.IP(ipBytes).String()
 	mac := net.HardwareAddr(macBytes).String()

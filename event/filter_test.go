@@ -1,6 +1,7 @@
-package event
+package event_test
 
 import (
+	"github.com/ipastusi/netreact/event"
 	"io"
 	"strings"
 	"testing"
@@ -25,7 +26,7 @@ func Test_isExcluded(t *testing.T) {
 		"10.0.2.2,31:0c:8a:cb:0b:0b": {},
 	}
 
-	filter := NewArpEventFilter(excludedIPs, excludedMACs, excludedPairs)
+	filter := event.NewArpEventFilter(excludedIPs, excludedMACs, excludedPairs)
 
 	data := map[string]struct {
 		mac           string
@@ -68,7 +69,7 @@ func Test_readIPs(t *testing.T) {
 	for name, d := range data {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ips, err := ReadIPs(d.data)
+			ips, err := event.ReadIPs(d.data)
 			if (err == nil && !d.ok) || (err != nil && d.ok) {
 				t.Fatalf("unexpected result for data %v, expected ok: %v, got error: %v", d.data, d.ok, err)
 			}
@@ -96,7 +97,7 @@ func Test_readMACs(t *testing.T) {
 	for name, d := range data {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ips, err := ReadMACs(d.data)
+			ips, err := event.ReadMACs(d.data)
 			if (err == nil && !d.ok) || (err != nil && d.ok) {
 				t.Fatalf("unexpected result for data %v, expected ok: %v, got error: %v", d.data, d.ok, err)
 			}
@@ -124,7 +125,7 @@ func Test_readPairs(t *testing.T) {
 	for name, d := range data {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ips, err := ReadPairs(d.data)
+			ips, err := event.ReadPairs(d.data)
 			if (err == nil && !d.ok) || (err != nil && d.ok) {
 				t.Fatalf("unexpected result for data %v, expected ok: %v, got error: %v", d.data, d.ok, err)
 			}
@@ -149,7 +150,7 @@ func Test_isValidIPv4(t *testing.T) {
 
 	for name, d := range data {
 		t.Run(name, func(t *testing.T) {
-			isValid := isValidIPv4(d.ip)
+			isValid := event.IsValidIPv4(d.ip)
 			if isValid != d.ok {
 				t.Fatalf("unexpected result for IP %v, expected ok: %v, got: %v", d.ip, d.ok, isValid)
 			}
@@ -171,7 +172,7 @@ func Test_isValidMAC(t *testing.T) {
 
 	for name, d := range data {
 		t.Run(name, func(t *testing.T) {
-			isValid := isValidMAC(d.mac)
+			isValid := event.IsValidMAC(d.mac)
 			if isValid != d.ok {
 				t.Fatalf("unexpected result for MAC %v, expected ok: %v, got: %v", d.mac, d.ok, isValid)
 			}

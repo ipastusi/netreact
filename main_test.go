@@ -23,14 +23,14 @@ func Test_processArpEvents(t *testing.T) {
 	}
 
 	// cleanup generated files
-	defer func() {
+	t.Cleanup(func() {
 		if _, err := os.Stat(testLogFileName); err == nil {
 			err = os.Remove(testLogFileName)
 			if err != nil {
 				t.Fatal("error removing test log file:", err)
 			}
 		}
-	}()
+	})
 
 	eventDir := "out"
 	logHandler := getLogHandler(t)

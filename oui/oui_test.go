@@ -1,7 +1,8 @@
-package oui
+package oui_test
 
 import (
 	"fmt"
+	"github.com/ipastusi/netreact/oui"
 	"net"
 	"testing"
 )
@@ -33,7 +34,7 @@ func Test_MacToVendor(t *testing.T) {
 	for name, e := range events {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			vendor := MacToVendor(e.mac)
+			vendor := oui.MacToVendor(e.mac)
 			if vendor != e.expectedVendor {
 				t.Fatal(fmt.Sprintf("Incorrect vendor '%v' for MAC %v, expected '%v'", vendor, e.mac, e.expectedVendor))
 			}
