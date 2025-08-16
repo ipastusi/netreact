@@ -1,9 +1,10 @@
 package cli_test
 
 import (
-	"github.com/ipastusi/netreact/cli"
 	"net"
 	"testing"
+
+	"github.com/ipastusi/netreact/cli"
 )
 
 func Test_processFlags(t *testing.T) {

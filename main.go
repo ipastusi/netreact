@@ -4,13 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcap"
-	"github.com/ipastusi/netreact/cache"
-	"github.com/ipastusi/netreact/cli"
-	"github.com/ipastusi/netreact/event"
-	"github.com/ipastusi/netreact/state"
 	"log/slog"
 	"net"
 	"os"
@@ -18,6 +11,14 @@ import (
 	"slices"
 	"syscall"
 	"time"
+
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcap"
+	"github.com/ipastusi/netreact/cache"
+	"github.com/ipastusi/netreact/cli"
+	"github.com/ipastusi/netreact/event"
+	"github.com/ipastusi/netreact/state"
 )
 
 func main() {

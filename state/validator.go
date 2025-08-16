@@ -2,6 +2,7 @@ package state
 
 import (
 	_ "embed"
+
 	"github.com/kaptinlin/jsonschema"
 )
 

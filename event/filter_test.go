@@ -1,10 +1,11 @@
 package event_test
 
 import (
-	"github.com/ipastusi/netreact/event"
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/ipastusi/netreact/event"
 )
 
 func Test_isExcluded(t *testing.T) {

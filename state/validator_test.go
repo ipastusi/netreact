@@ -2,8 +2,9 @@ package state_test
 
 import (
 	"errors"
-	"github.com/ipastusi/netreact/state"
 	"testing"
+
+	"github.com/ipastusi/netreact/state"
 )
 
 func Test_ValidateState(t *testing.T) {

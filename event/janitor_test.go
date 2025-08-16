@@ -2,10 +2,11 @@ package event_test
 
 import (
 	"fmt"
-	"github.com/ipastusi/netreact/event"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/ipastusi/netreact/event"
 )
 
 func Test_newEventJanitor(t *testing.T) {

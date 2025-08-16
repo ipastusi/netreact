@@ -1,8 +1,9 @@
 package cache
 
 import (
-	"github.com/ipastusi/netreact/event"
 	"net"
+
+	"github.com/ipastusi/netreact/event"
 )
 
 type HostKey [10]byte

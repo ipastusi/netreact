@@ -3,11 +3,6 @@ package main
 import (
 	"cmp"
 	"fmt"
-	"github.com/gdamore/tcell/v2"
-	"github.com/ipastusi/netreact/cache"
-	"github.com/ipastusi/netreact/event"
-	"github.com/ipastusi/netreact/oui"
-	"github.com/rivo/tview"
 	"log"
 	"net"
 	"os"
@@ -15,6 +10,12 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/ipastusi/netreact/cache"
+	"github.com/ipastusi/netreact/event"
+	"github.com/ipastusi/netreact/oui"
+	"github.com/rivo/tview"
 )
 
 // columns

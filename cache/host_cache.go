@@ -1,10 +1,11 @@
 package cache
 
 import (
-	"github.com/ipastusi/netreact/event"
-	"github.com/ipastusi/netreact/state"
 	"net"
 	"slices"
+
+	"github.com/ipastusi/netreact/event"
+	"github.com/ipastusi/netreact/state"
 )
 
 type HostCache struct {

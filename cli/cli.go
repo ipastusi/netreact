@@ -3,10 +3,11 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"golang.org/x/sys/unix"
 	"net"
 	"os"
 	"path/filepath"
+
+	"golang.org/x/sys/unix"
 )
 
 type Flags struct {

@@ -3,12 +3,13 @@ package event
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ipastusi/netreact/oui"
 	"log/slog"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/ipastusi/netreact/oui"
 )
 
 type ArpEventHandler struct {

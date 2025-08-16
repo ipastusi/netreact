@@ -2,8 +2,9 @@ package state_test
 
 import (
 	"bytes"
-	"github.com/ipastusi/netreact/state"
 	"testing"
+
+	"github.com/ipastusi/netreact/state"
 )
 
 func Test_FromJson(t *testing.T) {

@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/ipastusi/netreact/cache"
-	"github.com/ipastusi/netreact/event"
 	"log/slog"
 	"net"
 	"os"
@@ -11,6 +9,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ipastusi/netreact/cache"
+	"github.com/ipastusi/netreact/event"
 )
 
 const (

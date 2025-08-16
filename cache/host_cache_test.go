@@ -1,12 +1,13 @@
 package cache_test
 
 import (
-	"github.com/ipastusi/netreact/cache"
-	"github.com/ipastusi/netreact/event"
-	"github.com/ipastusi/netreact/state"
 	"net"
 	"slices"
 	"testing"
+
+	"github.com/ipastusi/netreact/cache"
+	"github.com/ipastusi/netreact/event"
+	"github.com/ipastusi/netreact/state"
 )
 
 func Test_FromAppState(t *testing.T) {

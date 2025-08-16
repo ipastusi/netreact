@@ -2,9 +2,10 @@ package oui_test
 
 import (
 	"fmt"
-	"github.com/ipastusi/netreact/oui"
 	"net"
 	"testing"
+
+	"github.com/ipastusi/netreact/oui"
 )
 
 func Test_MacToVendor(t *testing.T) {
