@@ -10,12 +10,11 @@ home network.
 
 ## Overview
 
-Once started, Netreact will passively listen to ARP traffic, and:
+Once started and depending on the configuration, Netreact will passively listen to ARP traffic, and:
 
-- Update the user interface every time a new packet is received, unless you decided to disable the user interface using the `-u=false` flag.
-- Log to `netreact.log` using JSON Lines format. Log file name can be customised using the `-l` flag.
-- Create event files in JSON format. File names will match `netreact-<unix_timestamp>-<event_code>.json` pattern,
-  e.g. `netreact-1747995770259-100.json`. See section below for more info.
+- Populate the log file using JSON Lines format.
+- Update the user interface every time a new packet is received, unless disabled.
+- Create event files in JSON format, if enabled.
 
 ## Quick start guide
 
@@ -32,91 +31,106 @@ Help:
 ```
 ./netreact -h
 Usage of ./netreact:
-  -a uint
-    	auto cleanup generated event files after n seconds (default 0, disabled)
   -c string
-    	expected CIDR range (default "0.0.0.0/0")
-  -d string
-    	directory where to store the event files, relative to the working directory, if provided (default working directory)
-  -ei string
-    	file with excluded IP addresses
-  -em string
-    	file with excluded MAC addresses
-  -ep string
-    	file with excluded IP-MAC address pairs
-  -f string
-    	BPF filter, e.g. "arp and src host not 0.0.0.0" (default "arp")
-  -fh string
-    	host event filter (default "1111111")
-  -fp string
-    	packet event filter (default "1111111")
+    	YAML config file (default none)
   -i string
-    	interface name, e.g. eth0
+    	interface name, e.g. eth0 (mandatory)
   -l string
     	log file (default "netreact.log")
   -p	put the interface in promiscuous mode (default false)
   -s string
     	state file (default none)
-  -u	display textual user interface (default true)
 ```
 
-Examples:
+If you won't provide the `-c` flag, Netreact will run in a textual user interface mode with limited configurability, and no event files will
+get generated. This way you can passively listen to the ARP traffic on your network, in real time. The `-s` flag allows you to specify the
+name of a JSON state file to / from which to save / load data. It allows you to persist the collected data between executions. Examples:
 
 ```
-./netreact -i eth0 -d out
-./netreact -i eth0 -d out -f 'arp and src host not 0.0.0.0'
-./netreact -i eth0 -d out -u=false
-./netreact -i eth0 -d out -s nrstate.json
-./netreact -i eth0 -d out -fp '0000000' -fh '1111111'
+./netreact -i eth0
+./netreact -i eth0 -s nrstate.json
+./netreact -i eth0 -c netreact.yaml
 ```
 
-## State file
+## YAML config
 
-`-s` flag allows you to define a JSON state file to / from which to save / load data. It allows you to persist the collected data between
-executions.
+Use the `-c` flag for full configurability. Everything that can be specified using CLI arguments (and much more) can be also specified
+through the YAML config. CLI arguments take precedence over YAML. Sample YAML config:
+
+```yaml
+# overrides -i flag
+interface: eth0
+# overrides -l flag
+log: netreact.log
+# overrides -p flag
+promiscuousMode: true
+# overrides -s flag
+stateFile: nrstate.json
+# BPF filter, e.g. "arp and src host not 0.0.0.0" (default "arp")
+bpfFilter: arp
+# disable textual user interface
+ui: true
+# event generation configuration
+events:
+  # directory where to store the event files, relative to the working directory, if provided (default working directory)
+  directory: out
+  # auto cleanup generated event files after n seconds (default 0, disabled)
+  autoCleanupDelaySec: 0
+  # expected CIDR range (default "0.0.0.0/0")
+  expectedCidrRange: 0.0.0.0/0
+  exclude:
+    # file with excluded IP addresses
+    ipFile: ip.txt
+    # file with excluded MAC addresses
+    macFile: mac.txt
+    # file with excluded IP-MAC address pairs
+    ipMacFile: ip_mac.txt
+  # generated every time a new ARP packet is received
+  packet:
+    # any ARP packet, event code 100
+    any: false
+    # ARP packet from a link-local address (169.254.0.0/16), event code 101
+    newLinkLocalUnicast: false
+    # ARP packet from unspecified address (0.0.0.0), event code 102
+    newUnspecified: false
+    # ARP packet from broadcast address (255.255.255.255), event code 103
+    newBroadcast: false
+    # ARP packet from unexpected address (see expectedCidrRange above), other than 169.254.0.0/16, 0.0.0.0 or 255.255.255.255, event code 104
+    newUnexpected: false
+    # ARP packet with the same MAC but different IP address than recorded previously, event code 105
+    newIpForMac: false
+    # ARP packet with the same IP but different MAC address than recorded previously, event code 106
+    newMacForIp: false
+  # same as above, but generated only once per host (a host is identified by an IP-MAC pair combination)
+  host:
+    # event code 200
+    any: false
+    # event code 201
+    newLinkLocalUnicast: false
+    # event code 202
+    newUnspecified: false
+    # event code 203
+    newBroadcast: false
+    # event code 204
+    newUnexpected: false
+    # event code 205
+    newIpForMac: false
+    # event code 206
+    newMacForIp: false
+```
 
 ## MAC vendor lookup
 
-Netreact ships with its own embedded MAC OUI database for MAC vendor lookup, based on publicly available MA-L data (
-see [oui.txt](oui/oui.txt)).
+Netreact ships with an embedded MAC OUI database for MAC vendor lookup, based on publicly available MA-L data (see [oui.txt](oui/oui.txt)).
 No external files or online services are required at runtime.
 
 ## Event files
 
-Netreact can generate the following types of events:
+See the documentation for the YAML config for the types of events supported by Netreact. Generated file names will match
+`netreact-<unix_timestamp>-<event_code>.json` pattern, e.g. `netreact-1747995770259-100.json`. Event codes are used in generated filenames
+only.
 
-| Event type                    | Event code | Packet event filter | Host event filter | Description                                                                                               |
-|-------------------------------|------------|---------------------|-------------------|-----------------------------------------------------------------------------------------------------------|
-| NEW_PACKET                    | 100        | 1000000             |                   | New ARP packet                                                                                            |
-| NEW_LINK_LOCAL_UNICAST_PACKET | 101        | 0100000             |                   | New ARP packet from a link-local address (169.254.0.0/16)                                                 |
-| NEW_UNSPECIFIED_PACKET        | 102        | 0010000             |                   | New ARP packet from unspecified address (0.0.0.0)                                                         |
-| NEW_BROADCAST_PACKET          | 103        | 0001000             |                   | New ARP packet from broadcast address (255.255.255.255)                                                   |
-| NEW_UNEXPECTED_IP_PACKET      | 104        | 0000100             |                   | New ARP packet from unexpected address, other than 169.254.0.0/16, 0.0.0.0 or 255.255.255.255             |
-| NEW_IP_FOR_MAC_PACKET         | 105        | 0000010             |                   | New ARP packet with the same MAC but different IP address than recorded previously                        |
-| NEW_MAC_FOR_IP_PACKET         | 106        | 0000001             |                   | New ARP packet with the same IP but different MAC address than recorded previously                        |
-| NEW_HOST                      | 200        |                     | 1000000           | ARP packet for a new host (host is identified as an IP-MAC address pair)                                  |
-| NEW_LINK_LOCAL_UNICAST_HOST   | 201        |                     | 0100000           | ARP packet from a new host with a link-local address (169.254.0.0/16)                                     |
-| NEW_UNSPECIFIED_HOST          | 202        |                     | 0010000           | ARP packet from a new host with an unspecified address (0.0.0.0)                                          |
-| NEW_BROADCAST_HOST            | 203        |                     | 0001000           | ARP packet from a new host with a broadcast address (255.255.255.255)                                     |
-| NEW_UNEXPECTED_IP_HOST        | 204        |                     | 0000100           | ARP packet from a new host with unexpected address, other than 169.254.0.0/16, 0.0.0.0 or 255.255.255.255 |                                                                                              |
-| NEW_IP_FOR_MAC_HOST           | 205        |                     | 0000010           | ARP packet from a new host with the same MAC but different IP address than recorded previously            |                                                                                                          |
-| NEW_MAC_FOR_IP_HOST           | 206        |                     | 0000001           | ARP packet from a new host with the same IP but different MAC address than recorded previously            |
-
-Event codes are used in generated filenames only.
-
-Use `-fp` and `-fh` flags to produce event files for selected event types only, e.g.:
-
-```
--fp '0000000' -fh '1100000'
-```
-
-The above configuration will prevent Netreact from emiting any packet-related events, while emiting only `NEW_HOST` and
-`NEW_LINK_LOCAL_UNICAST_HOST` host-related events.
-
-### Packet-related events
-
-Packet-related event types are triggered every time when a given packet is received. Event codes are 1xx.
-Format of packet-related event files (eventType will differ):
+Sample packet-level event file:
 
 ```json
 {
@@ -131,10 +145,7 @@ Format of packet-related event files (eventType will differ):
 }
 ```
 
-### Host-related events
-
-Host-related event types will be triggered only once per host first time given packet is received. Event codes are 2xx.
-Format of packet-related event files (eventType will differ):
+Sample host-level event file:
 
 ```json
 {
@@ -147,9 +158,7 @@ Format of packet-related event files (eventType will differ):
 }
 ```
 
-### Event details
-
-Event details will depend on the event type:
+Event details will depend on the particular event type:
 
 - `eventType` - One of the supported event types.
 - `ip` - ARP packet source IP address.
@@ -172,8 +181,6 @@ file detection mechanism and response logic.
 On Linux you might want to use `inotifywait` to detect event file creation:
 
 ```
-./netreact -i eth0 -d out
-
 inotifywait -qme close_write out/ --format %w%f | parallel -u echo
 out/netreact-1747995770259-100.json
 out/netreact-1747995770270-100.json
@@ -183,8 +190,6 @@ out/netreact-1747995770292-100.json
 On macOS you might want to use `fswatch`:
 
 ```
-./netreact -i en0 -d out
-
 fswatch --event Created out/ | xargs -n 1 -I _ echo _
 /path/to/netreact/out/netreact-1747995770294-100.json
 /path/to/netreact/out/netreact-1747995770336-100.json
@@ -193,14 +198,14 @@ fswatch --event Created out/ | xargs -n 1 -I _ echo _
 
 ### Why automatic event file cleanup on macOS makes fswatch incorrectly detect file deletion as file creation?
 
-If you are using Netreact on macOS with automatic cleanup of generated event files enabled using `-a` flag, and `fswatch` incorrectly
-reports file deletion as `Created` events, you might want to increase the cleanup delay to e.g. 30 seconds. See
+If you are using Netreact on macOS with enabled automatic cleanup of generated event files, and `fswatch` incorrectly reports file deletion
+as `Created` events, you might want to increase the cleanup delay to a higher value, e.g. 30 seconds. See
 [fswatch #144](https://github.com/emcrisostomo/fswatch/issues/144#issuecomment-264135666).
 
 ### Netreact doesn't detect any ARP traffic, unless I start tcpdump on the same machine. Why is that?
 
 By default, `tcpdump` puts the interface into promiscuous mode. If this makes Netreact start detecting ARP traffic, you will likely want to
-use the Netreact `-p` flag to put the interface into promiscuous mode without having to use `tcpdump`.
+configure Netreact to put the interface into promiscuous mode without having to use `tcpdump`.
 
 ### How can I leave Netreact running on the remote host, disconnect, and reconnect to that remote session again?
 
