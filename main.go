@@ -68,10 +68,9 @@ func main() {
 	exitOnError(err)
 
 	hostCache := cache.NewHostCache()
-	stateFileName := *cfg.StateFileName
-	if stateFileName != "" {
+	if cfg.StateFileName != nil {
 		var stateBytes []byte
-		stateBytes, err = os.ReadFile(stateFileName)
+		stateBytes, err = os.ReadFile(*cfg.StateFileName)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			exitOnError(err)
 		} else if err == nil {
@@ -86,13 +85,13 @@ func main() {
 	var uiApp *UIApp = nil
 	if *cfg.Ui {
 		uiApp = newUIApp(hostCache)
-		go loadUI(uiApp, ifaceName, stateFileName)
+		go loadUI(uiApp, ifaceName, cfg.StateFileName)
 	}
 
-	if stateFileName != "" {
+	if cfg.StateFileName != nil {
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-		go handleSignals(sig, hostCache, stateFileName)
+		go handleSignals(sig, hostCache, *cfg.StateFileName)
 	}
 
 	closeFile := func(file *os.File) {

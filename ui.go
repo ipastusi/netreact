@@ -154,7 +154,7 @@ func (uiApp *UIApp) GetColumnCount() int {
 
 // load the UI
 
-func loadUI(uiApp *UIApp, ifaceName string, stateFileName string) {
+func loadUI(uiApp *UIApp, ifaceName string, stateFileName *string) {
 	headerRow := getHeaderRow()
 	table := tview.NewTable().SetEvaluateAllRows(false)
 	table.SetContent(uiApp)
@@ -194,10 +194,10 @@ func loadUI(uiApp *UIApp, ifaceName string, stateFileName string) {
 	}
 }
 
-func getTitleBar(ifaceName string, stateFileName string) string {
+func getTitleBar(ifaceName string, stateFileName *string) string {
 	titleBar := fmt.Sprintf(" Netreact  |  Interface: %v ", ifaceName)
-	if stateFileName != "" {
-		titleBar += fmt.Sprintf(" |  State file: %v", stateFileName)
+	if stateFileName != nil {
+		titleBar += fmt.Sprintf(" |  State file: %v", *stateFileName)
 	}
 	return titleBar
 }
