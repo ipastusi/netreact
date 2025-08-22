@@ -12,17 +12,38 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/ipastusi/netreact/cache"
 	"github.com/ipastusi/netreact/cli"
+	"github.com/ipastusi/netreact/config"
 	"github.com/ipastusi/netreact/event"
 	"github.com/ipastusi/netreact/state"
 )
 
 func main() {
-	flags, err := cli.GetFlags()
+	flags := cli.GetFlags()
+	var cfgData []byte
+	var err error
+	if flags.ConfigFileName != nil && *flags.ConfigFileName != "" {
+		cfgData, err = os.ReadFile(*flags.ConfigFileName)
+		if err != nil {
+			exitOnError(err)
+		}
+	}
+
+	cfg, err := config.GetConfig(cfgData, flags.IfaceName, flags.LogFileName, flags.PromiscMode, flags.StateFileName)
+	if *flags.RenderConfig == true {
+		renderedConfig, err := yaml.Marshal(cfg)
+		fmt.Printf("%v", string(renderedConfig))
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
 	if err != nil && err.Error() == "no interface name provided" {
 		fmt.Printf("Usage of %v:\n", os.Args[0])
 		flag.PrintDefaults()
@@ -30,24 +51,24 @@ func main() {
 	}
 	exitOnError(err)
 
-	ifaceName := flags.IfaceName
+	ifaceName := *cfg.IfaceName
 	iface, err := net.InterfaceByName(ifaceName)
 	exitOnError(err)
 
-	logFileName := flags.LogFileName
+	logFileName := *cfg.LogFileName
 	logFile, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	exitOnError(err)
 
 	maxSize := int32(64)
-	promisc := flags.PromiscMode
+	promisc := *cfg.PromiscMode
 	pcapHandle, err := pcap.OpenLive(ifaceName, maxSize, promisc, pcap.BlockForever)
 	exitOnError(err)
 
-	err = pcapHandle.SetBPFFilter(flags.Filter)
+	err = pcapHandle.SetBPFFilter(*cfg.BpfFilter)
 	exitOnError(err)
 
 	hostCache := cache.NewHostCache()
-	stateFileName := flags.StateFileName
+	stateFileName := *cfg.StateFileName
 	if stateFileName != "" {
 		var stateBytes []byte
 		stateBytes, err = os.ReadFile(stateFileName)
@@ -63,7 +84,7 @@ func main() {
 	}
 
 	var uiApp *UIApp = nil
-	if flags.UiEnabled {
+	if *cfg.Ui {
 		uiApp = newUIApp(hostCache)
 		go loadUI(uiApp, ifaceName, stateFileName)
 	}
@@ -82,22 +103,22 @@ func main() {
 	}
 
 	var excludeIPs, excludeMACs, excludePairs map[string]struct{}
-	if flags.ExcludeIPs != "" {
-		ipFlagFile, err := os.Open(flags.ExcludeIPs)
+	if cfg.EventsConfig.ExcludeConfig.IpFile != nil {
+		ipFlagFile, err := os.Open(*cfg.EventsConfig.ExcludeConfig.IpFile)
 		exitOnError(err)
 		excludeIPs, err = event.ReadIPs(ipFlagFile)
 		exitOnError(err)
 		closeFile(ipFlagFile)
 	}
-	if flags.ExcludeMACs != "" {
-		macFlagFile, err := os.Open(flags.ExcludeMACs)
+	if cfg.EventsConfig.ExcludeConfig.MacFile != nil {
+		macFlagFile, err := os.Open(*cfg.EventsConfig.ExcludeConfig.MacFile)
 		exitOnError(err)
 		excludeMACs, err = event.ReadMACs(macFlagFile)
 		exitOnError(err)
 		closeFile(macFlagFile)
 	}
-	if flags.ExcludePairs != "" {
-		pairsFlagFile, err := os.Open(flags.ExcludePairs)
+	if cfg.EventsConfig.ExcludeConfig.IpMacFile != nil {
+		pairsFlagFile, err := os.Open(*cfg.EventsConfig.ExcludeConfig.IpMacFile)
 		exitOnError(err)
 		excludePairs, err = event.ReadPairs(pairsFlagFile)
 		exitOnError(err)
@@ -105,20 +126,20 @@ func main() {
 	}
 
 	logHandler := slog.NewJSONHandler(logFile, nil)
-	eventDir := flags.EventDir
-	autoCleanupDelay := flags.AutoCleanupDelay
-	if flags.AutoCleanupDelay > 0 {
+	eventDir := *cfg.EventsConfig.Directory
+	autoCleanupDelay := *cfg.EventsConfig.AutoCleanupDelaySec
+	if autoCleanupDelay > 0 {
 		janitor, err := event.NewEventJanitor(logHandler, eventDir, autoCleanupDelay)
 		exitOnError(err)
 		janitor.Start()
 	}
 
 	filter := event.NewArpEventFilter(excludeIPs, excludeMACs, excludePairs)
-	packetEventFilter := flags.PacketEventFilter
-	hostEventFilter := flags.HostEventFilter
-	expectedCidrRange := flags.ExpectedCidrRange
+	packetEventConfig := *cfg.EventsConfig.PacketEventConfig
+	hostEventConfig := *cfg.EventsConfig.HostEventConfig
+	expectedCidrRange := *cfg.EventsConfig.ExpectedCidrRange
 	ipToMac, macToIp := hostCache.IpAndMacMaps()
-	eventHandler := event.NewArpEventHandler(logHandler, eventDir, packetEventFilter, hostEventFilter, expectedCidrRange, ipToMac, macToIp)
+	eventHandler := event.NewArpEventHandler(logHandler, eventDir, packetEventConfig, hostEventConfig, expectedCidrRange, ipToMac, macToIp)
 	localMac := []byte(iface.HardwareAddr)
 	packetSource := gopacket.NewPacketSource(pcapHandle, pcapHandle.LinkType())
 	for packet := range packetSource.Packets() {

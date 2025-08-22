@@ -11,11 +11,13 @@ import (
 	"time"
 
 	"github.com/ipastusi/netreact/cache"
+	"github.com/ipastusi/netreact/config"
 	"github.com/ipastusi/netreact/event"
 )
 
-const (
+var (
 	testLogFileName = "test.log"
+	yes             = true
 )
 
 func Test_processArpEvents(t *testing.T) {
@@ -50,9 +52,16 @@ func Test_processArpEvents(t *testing.T) {
 
 	hostCache := cache.NewHostCache()
 	ipToMac, macToIp := hostCache.IpAndMacMaps()
-	packetEventFilter := "1111111"
-	hostEventFilter := "1111111"
-	handler := event.NewArpEventHandler(logHandler, eventDir, packetEventFilter, hostEventFilter, "192.168.1.0/24", ipToMac, macToIp)
+	eventTypeConfig := config.EventTypeConfig{
+		Any:                 &yes,
+		NewLinkLocalUnicast: &yes,
+		NewUnspecified:      &yes,
+		NewBroadcast:        &yes,
+		NewUnexpected:       &yes,
+		NewIpForMac:         &yes,
+		NewMacForIp:         &yes,
+	}
+	handler := event.NewArpEventHandler(logHandler, eventDir, eventTypeConfig, eventTypeConfig, "192.168.1.0/24", ipToMac, macToIp)
 
 	events := []struct {
 		arpEvent           event.ArpEvent
@@ -134,7 +143,7 @@ func Test_processArpEvents(t *testing.T) {
 
 		// check event files
 		var allEventCodes []event.Type
-		for i := 0; i < len(packetEventFilter); i++ {
+		for j := 0; j < 7; j++ {
 			allEventCodes = append(allEventCodes, event.Type(100+i), event.Type(200+i))
 		}
 

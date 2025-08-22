@@ -34,10 +34,11 @@ Usage of ./netreact:
   -c string
     	YAML config file (default none)
   -i string
-    	interface name, e.g. eth0 (mandatory)
+    	interface name, e.g. eth0
   -l string
     	log file (default "netreact.log")
   -p	put the interface in promiscuous mode (default false)
+  -r	render config and exit (default false)
   -s string
     	state file (default none)
 ```
@@ -63,7 +64,7 @@ interface: eth0
 # overrides -l flag
 log: netreact.log
 # overrides -p flag
-promiscuousMode: true
+promiscMode: true
 # overrides -s flag
 stateFile: nrstate.json
 # BPF filter, e.g. "arp and src host not 0.0.0.0" (default "arp")
