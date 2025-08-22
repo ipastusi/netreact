@@ -10,10 +10,10 @@ home network.
 
 ## Overview
 
-Once started and depending on the configuration, Netreact will passively listen to ARP traffic, and:
+Netreact will passively listen to ARP traffic, and depending on the configuration:
 
-- Populate the log file using JSON Lines format.
-- Update the user interface every time a new packet is received, unless disabled.
+- Populate its log file in JSON Lines format.
+- Update the user interface every time a new packet is received, unless the user interface was disabled.
 - Create event files in JSON format, if enabled.
 
 ## Quick start guide
@@ -45,7 +45,9 @@ Usage of ./netreact:
 
 If you won't provide the `-c` flag, Netreact will run in a textual user interface mode with limited configurability, and no event files will
 get generated. This way you can passively listen to the ARP traffic on your network, in real time. The `-s` flag allows you to specify the
-name of a JSON state file to / from which to save / load data. It allows you to persist the collected data between executions. Examples:
+name of a JSON state file to / from which to save / load data. It allows you to persist the collected data between executions.
+
+Examples:
 
 ```
 ./netreact -i eth0
