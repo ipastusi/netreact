@@ -22,9 +22,9 @@ type EventTypeConfig struct {
 }
 
 type ExcludeConfig struct {
-	IpFile    *string `yaml:"ipFile"`
-	MacFile   *string `yaml:"macFile"`
-	IpMacFile *string `yaml:"ipMacFile"`
+	IpFile    *string `yaml:"ipFile,omitempty"`
+	MacFile   *string `yaml:"macFile,omitempty"`
+	IpMacFile *string `yaml:"ipMacFile,omitempty"`
 }
 
 type EventsConfig struct {
@@ -37,9 +37,9 @@ type EventsConfig struct {
 }
 
 type Config struct {
-	IfaceName     *string       `yaml:"interface"`
+	IfaceName     *string       `yaml:"interface,omitempty"`
 	LogFileName   *string       `yaml:"log"`
-	StateFileName *string       `yaml:"stateFile"`
+	StateFileName *string       `yaml:"stateFile,omitempty"`
 	BpfFilter     *string       `yaml:"bpfFilter"`
 	PromiscMode   *bool         `yaml:"promiscMode"`
 	Ui            *bool         `yaml:"ui"`
@@ -67,7 +67,7 @@ func readConfig(data []byte) (Config, error) {
 }
 
 func (cfg *Config) applyOverrides(iface *string, log *string, prom *bool, state *string) {
-	if iface != nil {
+	if iface != nil && *iface != "" {
 		cfg.IfaceName = iface
 	}
 	if log != nil {
@@ -76,7 +76,7 @@ func (cfg *Config) applyOverrides(iface *string, log *string, prom *bool, state 
 	if prom != nil {
 		cfg.PromiscMode = prom
 	}
-	if state != nil {
+	if state != nil && *state != "" {
 		cfg.StateFileName = state
 	}
 }
@@ -193,7 +193,7 @@ func eventDirPath(eventsDirSuffix *string) (string, error) {
 }
 
 func (cfg *Config) validate() error {
-	if *cfg.IfaceName == "" {
+	if cfg.IfaceName == nil {
 		return fmt.Errorf("no interface name provided")
 	} else if _, err := net.InterfaceByName(*cfg.IfaceName); err != nil {
 		return err
