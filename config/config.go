@@ -49,27 +49,21 @@ type Config struct {
 func GetConfig(data []byte, iface *string, log *string, prom *bool, state *string) (Config, error) {
 	config, err := readConfig(data)
 	if err != nil {
-		return Config{}, err
+		return config, err
 	}
 	config.applyOverrides(iface, log, prom, state)
 	err = config.applyDefaults()
 	if err != nil {
-		return Config{}, err
+		return config, err
 	}
 	err = config.validate()
-	if err != nil {
-		return Config{}, err
-	}
-	return config, nil
+	return config, err
 }
 
 func readConfig(data []byte) (Config, error) {
 	config := &Config{}
 	err := yaml.UnmarshalWithOptions(data, config, yaml.Strict())
-	if err != nil {
-		return Config{}, err
-	}
-	return *config, nil
+	return *config, err
 }
 
 func (cfg *Config) applyOverrides(iface *string, log *string, prom *bool, state *string) {
@@ -195,11 +189,7 @@ func eventDirPath(eventsDirSuffix *string) (string, error) {
 
 	evendDirPath := filepath.Join(pwd, step, suffix)
 	absEventDirPath, err := filepath.Abs(evendDirPath)
-	if err != nil {
-		return "", err
-	}
-
-	return absEventDirPath, nil
+	return absEventDirPath, err
 }
 
 func (cfg *Config) validate() error {
