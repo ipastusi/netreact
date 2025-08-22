@@ -49,18 +49,27 @@ type Config struct {
 func GetConfig(data []byte, iface *string, log *string, prom *bool, state *string) (Config, error) {
 	config, err := readConfig(data)
 	if err != nil {
-		return config, err
+		return Config{}, err
 	}
 	config.applyOverrides(iface, log, prom, state)
-	config.applyDefaults()
+	err = config.applyDefaults()
+	if err != nil {
+		return Config{}, err
+	}
 	err = config.validate()
-	return config, err
+	if err != nil {
+		return Config{}, err
+	}
+	return config, nil
 }
 
 func readConfig(data []byte) (Config, error) {
 	config := &Config{}
 	err := yaml.UnmarshalWithOptions(data, config, yaml.Strict())
-	return *config, err
+	if err != nil {
+		return Config{}, err
+	}
+	return *config, nil
 }
 
 func (cfg *Config) applyOverrides(iface *string, log *string, prom *bool, state *string) {
@@ -78,11 +87,10 @@ func (cfg *Config) applyOverrides(iface *string, log *string, prom *bool, state 
 	}
 }
 
-func (cfg *Config) applyDefaults() {
+func (cfg *Config) applyDefaults() error {
 	defaultLog := "netreact.log"
 	defaultBpfFilter := "arp"
 	defaultExpectedCidrRange := "0.0.0.0/0"
-	defaultDirectory := ""
 	yes := true
 	no := false
 	zero := uint(0)
@@ -105,9 +113,13 @@ func (cfg *Config) applyDefaults() {
 	if cfg.EventsConfig.AutoCleanupDelaySec == nil {
 		cfg.EventsConfig.AutoCleanupDelaySec = &zero
 	}
-	if cfg.EventsConfig.Directory == nil {
-		cfg.EventsConfig.Directory = &defaultDirectory
+
+	eventDirPath, err := eventDirPath(cfg.EventsConfig.Directory)
+	if err != nil {
+		return err
 	}
+	cfg.EventsConfig.Directory = &eventDirPath
+
 	if cfg.EventsConfig.ExpectedCidrRange == nil {
 		cfg.EventsConfig.ExpectedCidrRange = &defaultExpectedCidrRange
 	}
@@ -162,32 +174,44 @@ func (cfg *Config) applyDefaults() {
 	if cfg.EventsConfig.HostEventConfig.NewMacForIp == nil {
 		cfg.EventsConfig.HostEventConfig.NewMacForIp = &no
 	}
+	return nil
+}
+
+func eventDirPath(eventsDirSuffix *string) (string, error) {
+	pwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	var step string
+	if strings.HasSuffix(pwd, "/config") {
+		step = ".."
+	}
+
+	var suffix string
+	if eventsDirSuffix != nil {
+		suffix = *eventsDirSuffix
+	}
+
+	evendDirPath := filepath.Join(pwd, step, suffix)
+	absEventDirPath, err := filepath.Abs(evendDirPath)
+	if err != nil {
+		return "", err
+	}
+
+	return absEventDirPath, nil
 }
 
 func (cfg *Config) validate() error {
-	var pwd, absEventDirPath string
-
 	if *cfg.IfaceName == "" {
 		return fmt.Errorf("no interface name provided")
 	} else if _, err := net.InterfaceByName(*cfg.IfaceName); err != nil {
 		return err
-	} else if pwd, err = os.Getwd(); err != nil {
-		return err
 	} else {
-		step := ""
-		if strings.HasSuffix(pwd, "/config") {
-			step = ".."
-		}
-		evendDirPath := filepath.Join(pwd, step, *cfg.EventsConfig.Directory)
-		absEventDirPath, err = filepath.Abs(evendDirPath)
-		if err != nil {
-			return err
-		}
 		// we might want to make it work on Windows one day. today is not that day
-		if unix.Access(absEventDirPath, unix.W_OK) != nil {
-			return fmt.Errorf("directory does not exist or is not writable: %v", absEventDirPath)
+		if unix.Access(*cfg.EventsConfig.Directory, unix.W_OK) != nil {
+			return fmt.Errorf("directory does not exist or is not writable: %v", *cfg.EventsConfig.Directory)
 		}
-		*cfg.EventsConfig.Directory = absEventDirPath
 	}
 
 	if ip, _, err := net.ParseCIDR(*cfg.EventsConfig.ExpectedCidrRange); err != nil {
