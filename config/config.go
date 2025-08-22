@@ -41,9 +41,9 @@ type Config struct {
 	LogFileName   *string       `yaml:"log"`
 	StateFileName *string       `yaml:"stateFile"`
 	BpfFilter     *string       `yaml:"bpfFilter"`
-	EventsConfig  *EventsConfig `yaml:"events"`
 	PromiscMode   *bool         `yaml:"promiscMode"`
 	Ui            *bool         `yaml:"ui"`
+	EventsConfig  *EventsConfig `yaml:"events"`
 }
 
 func GetConfig(data []byte, iface *string, log *string, prom *bool, state *string) (Config, error) {
