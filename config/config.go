@@ -56,6 +56,10 @@ func GetConfig(data []byte, iface *string, log *string, prom *bool, state *strin
 	if err != nil {
 		return config, err
 	}
+	err = config.resolveAbsDirs()
+	if err != nil {
+		return config, err
+	}
 	err = config.validate()
 	return config, err
 }
@@ -81,6 +85,29 @@ func (cfg *Config) applyOverrides(iface *string, log *string, prom *bool, state 
 	}
 }
 
+func (cfg *Config) resolveAbsDirs() error {
+	err := applyIfNotNil(&cfg.LogFileName)
+	if err != nil {
+		return err
+	}
+	err = applyIfNotNil(&cfg.StateFileName)
+	if err != nil {
+		return err
+	}
+	err = applyIfNotNil(&cfg.EventsConfig.Directory)
+	return err
+}
+
+func applyIfNotNil(ptr **string) error {
+	var absDir string
+	var err error
+	if *ptr != nil {
+		absDir, err = toAbsDir(*ptr)
+		*ptr = &absDir
+	}
+	return err
+}
+
 func (cfg *Config) applyDefaults() error {
 	applyToNil(&cfg.BpfFilter, "arp")
 	applyToNil(&cfg.PromiscMode, false)
@@ -88,6 +115,7 @@ func (cfg *Config) applyDefaults() error {
 	applyToNil(&cfg.EventsConfig, EventsConfig{})
 	applyToNil(&cfg.EventsConfig.AutoCleanupDelaySec, 0)
 	applyToNil(&cfg.EventsConfig.ExpectedCidrRange, "0.0.0.0/0")
+	applyToNil(&cfg.EventsConfig.Directory, "")
 	applyToNil(&cfg.EventsConfig.ExcludeConfig, ExcludeConfig{})
 
 	applyToNil(&cfg.EventsConfig.PacketEventConfig, EventTypeConfig{})
@@ -108,12 +136,6 @@ func (cfg *Config) applyDefaults() error {
 	applyToNil(&cfg.EventsConfig.HostEventConfig.NewIpForMac, false)
 	applyToNil(&cfg.EventsConfig.HostEventConfig.NewMacForIp, false)
 
-	eventDirPath, err := eventDirPath(cfg.EventsConfig.Directory)
-	if err != nil {
-		return err
-	}
-	cfg.EventsConfig.Directory = &eventDirPath
-
 	return nil
 }
 
@@ -123,7 +145,7 @@ func applyToNil[T any](ptr **T, value T) {
 	}
 }
 
-func eventDirPath(eventsDirSuffix *string) (string, error) {
+func toAbsDir(dir *string) (string, error) {
 	pwd, err := os.Getwd()
 	if err != nil {
 		return "", err
@@ -136,13 +158,12 @@ func eventDirPath(eventsDirSuffix *string) (string, error) {
 	}
 
 	var suffix string
-	if eventsDirSuffix != nil {
-		suffix = *eventsDirSuffix
+	if dir != nil {
+		suffix = *dir
 	}
 
-	evendDirPath := filepath.Join(pwd, step, suffix)
-	absEventDirPath, err := filepath.Abs(evendDirPath)
-	return absEventDirPath, err
+	absDir := filepath.Join(pwd, step, suffix)
+	return absDir, nil
 }
 
 func (cfg *Config) validate() error {

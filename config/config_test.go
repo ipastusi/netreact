@@ -12,11 +12,15 @@ import (
 var (
 	iface, _      = net.InterfaceByIndex(1)
 	customLog     = "custom.log"
+	customLogPtr  = getDir(customLog)
 	defaultLog    = "netreact.log"
+	defaultLogPtr = getDir(defaultLog)
 	state         = "nrstate.json"
+	statePtr      = getDir(state)
 	defaultFilter = "arp"
 	customFilter  = "arp and src host not 0.0.0.0"
-	customDir     = getDir("out")
+	customDir     = "out"
+	customDirPtr  = getDir(customDir)
 	defaultDir    = getDir("")
 	defaultCidr   = "0.0.0.0/0"
 	customCidr    = "192.168.0.0/24"
@@ -57,20 +61,20 @@ events:
     newMacForIp: true
 `)
 
-	c, err := GetConfig(data, &iface.Name, nil, nil, nil)
+	c, err := GetConfig(data, &iface.Name, &customLog, nil, nil)
 	if err != nil {
 		t.Fatalf("Error loading yaml: %v", err)
 	}
 
 	expC := Config{
 		IfaceName:     &iface.Name,
-		LogFileName:   &customLog,
+		LogFileName:   &customLogPtr,
 		PromiscMode:   &yes,
-		StateFileName: &state,
+		StateFileName: &statePtr,
 		BpfFilter:     &customFilter,
 		Ui:            &no,
 		EventsConfig: &EventsConfig{
-			Directory:           &customDir,
+			Directory:           &customDirPtr,
 			ExpectedCidrRange:   &customCidr,
 			AutoCleanupDelaySec: &_30,
 			ExcludeConfig:       &ExcludeConfig{},
@@ -113,8 +117,8 @@ func Test_GetConfigEmpty(t *testing.T) {
 
 	expC := Config{
 		IfaceName:     &iface.Name,
-		LogFileName:   &defaultLog,
-		StateFileName: &state,
+		LogFileName:   &defaultLogPtr,
+		StateFileName: &statePtr,
 		BpfFilter:     &defaultFilter,
 		PromiscMode:   &yes,
 		Ui:            &yes,
@@ -172,12 +176,12 @@ events:
 
 	expC := Config{
 		IfaceName:   &iface.Name,
-		LogFileName: &defaultLog,
+		LogFileName: &defaultLogPtr,
 		PromiscMode: &yes,
 		BpfFilter:   &customFilter,
 		Ui:          &yes,
 		EventsConfig: &EventsConfig{
-			Directory:           &customDir,
+			Directory:           &customDirPtr,
 			ExpectedCidrRange:   &customCidr,
 			AutoCleanupDelaySec: &_0,
 			ExcludeConfig:       &ExcludeConfig{},
@@ -243,7 +247,7 @@ events:
     newIpForMac: true
     newMacForIp: true
 `)
-	_, err := GetConfig(data, &iface.Name, nil, nil, nil)
+	_, err := GetConfig(data, &iface.Name, &defaultLog, nil, nil)
 	if err == nil {
 		t.Fatal("No error when loading yaml with extra property")
 	}
@@ -254,7 +258,7 @@ func Test_GetConfigMissingIface(t *testing.T) {
 
 	data := []byte(``)
 	ifaceName := ""
-	_, err := GetConfig(data, &ifaceName, nil, &yes, &state)
+	_, err := GetConfig(data, &ifaceName, &defaultLog, &yes, &state)
 	if err == nil {
 		t.Fatal("No error on invalid data")
 	}
@@ -265,7 +269,7 @@ func Test_GetConfigNonexistentIface(t *testing.T) {
 
 	data := []byte(``)
 	ifaceName := "nonexistent"
-	_, err := GetConfig(data, &ifaceName, nil, &yes, &state)
+	_, err := GetConfig(data, &ifaceName, &defaultLog, &yes, &state)
 	if err == nil {
 		t.Fatal("No error on invalid data")
 	}
@@ -276,7 +280,7 @@ func Test_GetConfigNonexistentEventDir(t *testing.T) {
 
 	data := []byte(`events:
   directory: nonexistent`)
-	_, err := GetConfig(data, &iface.Name, nil, &yes, &state)
+	_, err := GetConfig(data, &iface.Name, &defaultLog, &yes, &state)
 	if err == nil {
 		t.Fatal("No error on invalid data")
 	}
@@ -287,7 +291,7 @@ func Test_GetConfigInvalidCidrRange1(t *testing.T) {
 
 	data := []byte(`events:
   expectedCidrRange: 2001:db8::/32`)
-	_, err := GetConfig(data, &iface.Name, nil, &yes, &state)
+	_, err := GetConfig(data, &iface.Name, &defaultLog, &yes, &state)
 	if err == nil {
 		t.Fatal("No error on invalid data")
 	}
@@ -298,7 +302,7 @@ func Test_GetConfigInvalidCidrRange2(t *testing.T) {
 
 	data := []byte(`events:
   expectedCidrRange: 0.0.0.0/33`)
-	_, err := GetConfig(data, &iface.Name, nil, &yes, &state)
+	_, err := GetConfig(data, &iface.Name, &defaultLog, &yes, &state)
 	if err == nil {
 		t.Fatal("No error on invalid data")
 	}
@@ -309,7 +313,7 @@ func Test_GetConfigInvalidCidrRange3(t *testing.T) {
 
 	data := []byte(`events:
   expectedCidrRange: invalid`)
-	_, err := GetConfig(data, &iface.Name, nil, &yes, &state)
+	_, err := GetConfig(data, &iface.Name, &defaultLog, &yes, &state)
 	if err == nil {
 		t.Fatal("No error on invalid data")
 	}
@@ -321,7 +325,7 @@ func Test_GetConfigNonexistentExcludeIpFile(t *testing.T) {
 	data := []byte(`events:
   exclude:
     ipFile: nonexistent.txt`)
-	_, err := GetConfig(data, &iface.Name, nil, &yes, &state)
+	_, err := GetConfig(data, &iface.Name, &defaultLog, &yes, &state)
 	if err == nil {
 		t.Fatal("No error on invalid data")
 	}
@@ -333,7 +337,7 @@ func Test_GetConfigNonexistentExcludeMacFile(t *testing.T) {
 	data := []byte(`events:
   exclude:
     macFile: nonexistent.txt`)
-	_, err := GetConfig(data, &iface.Name, nil, &yes, &state)
+	_, err := GetConfig(data, &iface.Name, &defaultLog, &yes, &state)
 	if err == nil {
 		t.Fatal("No error on invalid data")
 	}
@@ -345,7 +349,7 @@ func Test_GetConfigNonexistentExcludeIpMacFile(t *testing.T) {
 	data := []byte(`events:
   exclude:
     ipMacFile: nonexistent.txt`)
-	_, err := GetConfig(data, &iface.Name, nil, &yes, &state)
+	_, err := GetConfig(data, &iface.Name, &defaultLog, &yes, &state)
 	if err == nil {
 		t.Fatal("No error on invalid data")
 	}
@@ -353,7 +357,5 @@ func Test_GetConfigNonexistentExcludeIpMacFile(t *testing.T) {
 
 func getDir(path string) string {
 	pwd, _ := os.Getwd()
-	evendDirPath := filepath.Join(pwd, "..", path)
-	absEventDirPath, _ := filepath.Abs(evendDirPath)
-	return absEventDirPath
+	return filepath.Join(pwd, "..", path)
 }
