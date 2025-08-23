@@ -52,11 +52,8 @@ func GetConfig(data []byte, iface *string, log *string, prom *bool, state *strin
 		return config, err
 	}
 	config.applyOverrides(iface, log, prom, state)
-	err = config.applyDefaults()
-	if err != nil {
-		return config, err
-	}
-	err = config.resolveAbsDirs()
+	config.applyDefaults()
+	err = config.resolveAbsPaths()
 	if err != nil {
 		return config, err
 	}
@@ -85,30 +82,30 @@ func (cfg *Config) applyOverrides(iface *string, log *string, prom *bool, state 
 	}
 }
 
-func (cfg *Config) resolveAbsDirs() error {
-	err := applyIfNotNil(&cfg.LogFileName)
+func (cfg *Config) resolveAbsPaths() error {
+	err := resolveIfNotNil(&cfg.LogFileName)
 	if err != nil {
 		return err
 	}
-	err = applyIfNotNil(&cfg.StateFileName)
+	err = resolveIfNotNil(&cfg.StateFileName)
 	if err != nil {
 		return err
 	}
-	err = applyIfNotNil(&cfg.EventsConfig.Directory)
+	err = resolveIfNotNil(&cfg.EventsConfig.Directory)
 	return err
 }
 
-func applyIfNotNil(ptr **string) error {
-	var absDir string
+func resolveIfNotNil(ptr **string) error {
+	var absPath string
 	var err error
 	if *ptr != nil {
-		absDir, err = toAbsDir(*ptr)
-		*ptr = &absDir
+		absPath, err = toAbsPath(*ptr)
+		*ptr = &absPath
 	}
 	return err
 }
 
-func (cfg *Config) applyDefaults() error {
+func (cfg *Config) applyDefaults() {
 	applyToNil(&cfg.BpfFilter, "arp")
 	applyToNil(&cfg.PromiscMode, false)
 	applyToNil(&cfg.Ui, true)
@@ -135,8 +132,6 @@ func (cfg *Config) applyDefaults() error {
 	applyToNil(&cfg.EventsConfig.HostEventConfig.NewUnexpected, false)
 	applyToNil(&cfg.EventsConfig.HostEventConfig.NewIpForMac, false)
 	applyToNil(&cfg.EventsConfig.HostEventConfig.NewMacForIp, false)
-
-	return nil
 }
 
 func applyToNil[T any](ptr **T, value T) {
@@ -145,7 +140,7 @@ func applyToNil[T any](ptr **T, value T) {
 	}
 }
 
-func toAbsDir(dir *string) (string, error) {
+func toAbsPath(path *string) (string, error) {
 	pwd, err := os.Getwd()
 	if err != nil {
 		return "", err
@@ -158,12 +153,12 @@ func toAbsDir(dir *string) (string, error) {
 	}
 
 	var suffix string
-	if dir != nil {
-		suffix = *dir
+	if path != nil {
+		suffix = *path
 	}
 
-	absDir := filepath.Join(pwd, step, suffix)
-	return absDir, nil
+	absPath := filepath.Join(pwd, step, suffix)
+	return absPath, nil
 }
 
 func (cfg *Config) validate() error {
