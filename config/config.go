@@ -22,9 +22,9 @@ type EventTypeConfig struct {
 }
 
 type ExcludeConfig struct {
-	IpFile    *string `yaml:"ipFile,omitempty"`
-	MacFile   *string `yaml:"macFile,omitempty"`
-	IpMacFile *string `yaml:"ipMacFile,omitempty"`
+	IpFile    *string `yaml:"ipFile"`
+	MacFile   *string `yaml:"macFile"`
+	IpMacFile *string `yaml:"ipMacFile"`
 }
 
 type EventsConfig struct {
@@ -37,9 +37,9 @@ type EventsConfig struct {
 }
 
 type Config struct {
-	IfaceName     *string       `yaml:"interface,omitempty"`
+	IfaceName     *string       `yaml:"interface"`
 	LogFileName   *string       `yaml:"log"`
-	StateFileName *string       `yaml:"stateFile,omitempty"`
+	StateFileName *string       `yaml:"stateFile"`
 	BpfFilter     *string       `yaml:"bpfFilter"`
 	PromiscMode   *bool         `yaml:"promiscMode"`
 	Ui            *bool         `yaml:"ui"`
@@ -82,31 +82,31 @@ func (cfg *Config) applyOverrides(iface *string, log *string, prom *bool, state 
 }
 
 func (cfg *Config) applyDefaults() error {
-	defaultLog := "netreact.log"
-	defaultBpfFilter := "arp"
-	defaultExpectedCidrRange := "0.0.0.0/0"
-	yes := true
-	no := false
-	zero := uint(0)
+	applyToNil(&cfg.BpfFilter, "arp")
+	applyToNil(&cfg.PromiscMode, false)
+	applyToNil(&cfg.Ui, true)
+	applyToNil(&cfg.EventsConfig, EventsConfig{})
+	applyToNil(&cfg.EventsConfig.AutoCleanupDelaySec, 0)
+	applyToNil(&cfg.EventsConfig.ExpectedCidrRange, "0.0.0.0/0")
+	applyToNil(&cfg.EventsConfig.ExcludeConfig, ExcludeConfig{})
 
-	if cfg.LogFileName == nil {
-		cfg.LogFileName = &defaultLog
-	}
-	if cfg.BpfFilter == nil {
-		cfg.BpfFilter = &defaultBpfFilter
-	}
-	if cfg.PromiscMode == nil {
-		cfg.PromiscMode = &no
-	}
-	if cfg.Ui == nil {
-		cfg.Ui = &yes
-	}
-	if cfg.EventsConfig == nil {
-		cfg.EventsConfig = &EventsConfig{}
-	}
-	if cfg.EventsConfig.AutoCleanupDelaySec == nil {
-		cfg.EventsConfig.AutoCleanupDelaySec = &zero
-	}
+	applyToNil(&cfg.EventsConfig.PacketEventConfig, EventTypeConfig{})
+	applyToNil(&cfg.EventsConfig.PacketEventConfig.Any, false)
+	applyToNil(&cfg.EventsConfig.PacketEventConfig.NewLinkLocalUnicast, false)
+	applyToNil(&cfg.EventsConfig.PacketEventConfig.NewUnspecified, false)
+	applyToNil(&cfg.EventsConfig.PacketEventConfig.NewBroadcast, false)
+	applyToNil(&cfg.EventsConfig.PacketEventConfig.NewUnexpected, false)
+	applyToNil(&cfg.EventsConfig.PacketEventConfig.NewIpForMac, false)
+	applyToNil(&cfg.EventsConfig.PacketEventConfig.NewMacForIp, false)
+
+	applyToNil(&cfg.EventsConfig.HostEventConfig, EventTypeConfig{})
+	applyToNil(&cfg.EventsConfig.HostEventConfig.Any, false)
+	applyToNil(&cfg.EventsConfig.HostEventConfig.NewLinkLocalUnicast, false)
+	applyToNil(&cfg.EventsConfig.HostEventConfig.NewUnspecified, false)
+	applyToNil(&cfg.EventsConfig.HostEventConfig.NewBroadcast, false)
+	applyToNil(&cfg.EventsConfig.HostEventConfig.NewUnexpected, false)
+	applyToNil(&cfg.EventsConfig.HostEventConfig.NewIpForMac, false)
+	applyToNil(&cfg.EventsConfig.HostEventConfig.NewMacForIp, false)
 
 	eventDirPath, err := eventDirPath(cfg.EventsConfig.Directory)
 	if err != nil {
@@ -114,61 +114,13 @@ func (cfg *Config) applyDefaults() error {
 	}
 	cfg.EventsConfig.Directory = &eventDirPath
 
-	if cfg.EventsConfig.ExpectedCidrRange == nil {
-		cfg.EventsConfig.ExpectedCidrRange = &defaultExpectedCidrRange
-	}
-	if cfg.EventsConfig.ExcludeConfig == nil {
-		cfg.EventsConfig.ExcludeConfig = &ExcludeConfig{}
-	}
-	if cfg.EventsConfig.PacketEventConfig == nil {
-		cfg.EventsConfig.PacketEventConfig = &EventTypeConfig{}
-	}
-	if cfg.EventsConfig.PacketEventConfig.Any == nil {
-		cfg.EventsConfig.PacketEventConfig.Any = &no
-	}
-	if cfg.EventsConfig.PacketEventConfig.NewLinkLocalUnicast == nil {
-		cfg.EventsConfig.PacketEventConfig.NewLinkLocalUnicast = &no
-	}
-	if cfg.EventsConfig.PacketEventConfig.NewUnspecified == nil {
-		cfg.EventsConfig.PacketEventConfig.NewUnspecified = &no
-	}
-	if cfg.EventsConfig.PacketEventConfig.NewBroadcast == nil {
-		cfg.EventsConfig.PacketEventConfig.NewBroadcast = &no
-	}
-	if cfg.EventsConfig.PacketEventConfig.NewUnexpected == nil {
-		cfg.EventsConfig.PacketEventConfig.NewUnexpected = &no
-	}
-	if cfg.EventsConfig.PacketEventConfig.NewIpForMac == nil {
-		cfg.EventsConfig.PacketEventConfig.NewIpForMac = &no
-	}
-	if cfg.EventsConfig.PacketEventConfig.NewMacForIp == nil {
-		cfg.EventsConfig.PacketEventConfig.NewMacForIp = &no
-	}
-	if cfg.EventsConfig.HostEventConfig == nil {
-		cfg.EventsConfig.HostEventConfig = &EventTypeConfig{}
-	}
-	if cfg.EventsConfig.HostEventConfig.Any == nil {
-		cfg.EventsConfig.HostEventConfig.Any = &no
-	}
-	if cfg.EventsConfig.HostEventConfig.NewLinkLocalUnicast == nil {
-		cfg.EventsConfig.HostEventConfig.NewLinkLocalUnicast = &no
-	}
-	if cfg.EventsConfig.HostEventConfig.NewUnspecified == nil {
-		cfg.EventsConfig.HostEventConfig.NewUnspecified = &no
-	}
-	if cfg.EventsConfig.HostEventConfig.NewBroadcast == nil {
-		cfg.EventsConfig.HostEventConfig.NewBroadcast = &no
-	}
-	if cfg.EventsConfig.HostEventConfig.NewUnexpected == nil {
-		cfg.EventsConfig.HostEventConfig.NewUnexpected = &no
-	}
-	if cfg.EventsConfig.HostEventConfig.NewIpForMac == nil {
-		cfg.EventsConfig.HostEventConfig.NewIpForMac = &no
-	}
-	if cfg.EventsConfig.HostEventConfig.NewMacForIp == nil {
-		cfg.EventsConfig.HostEventConfig.NewMacForIp = &no
-	}
 	return nil
+}
+
+func applyToNil[T any](ptr **T, value T) {
+	if *ptr == nil {
+		*ptr = &value
+	}
 }
 
 func eventDirPath(eventsDirSuffix *string) (string, error) {
@@ -178,6 +130,7 @@ func eventDirPath(eventsDirSuffix *string) (string, error) {
 	}
 
 	var step string
+	// when running unit tests for this package
 	if strings.HasSuffix(pwd, "/config") {
 		step = ".."
 	}

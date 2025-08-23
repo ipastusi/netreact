@@ -106,7 +106,7 @@ func Test_GetConfigEmpty(t *testing.T) {
 
 	data := []byte(``)
 
-	c, err := GetConfig(data, &iface.Name, nil, &yes, &state)
+	c, err := GetConfig(data, &iface.Name, &defaultLog, &yes, &state)
 	if err != nil {
 		t.Fatalf("Error loading yaml: %v", err)
 	}
@@ -165,7 +165,7 @@ events:
     newBroadcast: true
     newIpForMac: true
 `)
-	c, err := GetConfig(data, &iface.Name, nil, nil, nil)
+	c, err := GetConfig(data, &iface.Name, &defaultLog, nil, nil)
 	if err != nil {
 		t.Fatalf("Error loading yaml: %v", err)
 	}
