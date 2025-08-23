@@ -96,13 +96,14 @@ func (cfg *Config) resolveAbsPaths() error {
 }
 
 func resolveIfNotNil(ptr **string) error {
-	var absPath string
-	var err error
 	if *ptr != nil {
-		absPath, err = toAbsPath(*ptr)
+		absPath, err := toAbsPath(*ptr)
+		if err != nil {
+			return err
+		}
 		*ptr = &absPath
 	}
-	return err
+	return nil
 }
 
 func (cfg *Config) applyDefaults() {
