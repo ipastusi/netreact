@@ -36,12 +36,16 @@ func main() {
 
 	cfg, err := config.GetConfig(cfgData, flags.IfaceName, flags.LogFileName, flags.PromiscMode, flags.StateFileName)
 	if *flags.RenderConfig == true {
-		renderedConfig, err := yaml.Marshal(cfg)
+		renderedConfig, errMarshal := yaml.Marshal(cfg)
 		fmt.Printf("%v", string(renderedConfig))
+		var errs []error
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			errs = append(errs, err)
 		}
+		if errMarshal != nil {
+			errs = append(errs, err)
+		}
+		exitOnErrors(errs)
 		os.Exit(0)
 	}
 	if err != nil && err.Error() == "no interface name provided" {

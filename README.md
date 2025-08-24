@@ -122,6 +122,12 @@ events:
     newMacForIp: false
 ```
 
+For `events.exclude.ipFile`, the file should contain a single IP address per line.
+
+For `events.exclude.macFile`, the file should contain a single MAC address per line.
+
+For `events.exclude.ipMacFile`, the file should contain a single comma-separated IP and MAC address pair per line.
+
 ## MAC vendor lookup
 
 Netreact ships with an embedded MAC OUI database for MAC vendor lookup, based on publicly available MA-L data (see [oui.txt](oui/oui.txt)).

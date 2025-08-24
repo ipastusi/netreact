@@ -68,18 +68,10 @@ func readConfig(data []byte) (Config, error) {
 }
 
 func (cfg *Config) applyOverrides(iface *string, log *string, prom *bool, state *string) {
-	if iface != nil && *iface != "" {
-		cfg.IfaceName = iface
-	}
-	if log != nil {
-		cfg.LogFileName = log
-	}
-	if prom != nil {
-		cfg.PromiscMode = prom
-	}
-	if state != nil && *state != "" {
-		cfg.StateFileName = state
-	}
+	applyIfNotNilOrEmpty(&cfg.IfaceName, iface)
+	applyIfNotNil(&cfg.LogFileName, log)
+	applyIfNotNil(&cfg.PromiscMode, prom)
+	applyIfNotNilOrEmpty(&cfg.StateFileName, state)
 }
 
 func (cfg *Config) resolveAbsPaths() error {
@@ -93,17 +85,6 @@ func (cfg *Config) resolveAbsPaths() error {
 	}
 	err = resolveIfNotNil(&cfg.EventsConfig.Directory)
 	return err
-}
-
-func resolveIfNotNil(ptr **string) error {
-	if *ptr != nil {
-		absPath, err := toAbsPath(*ptr)
-		if err != nil {
-			return err
-		}
-		*ptr = &absPath
-	}
-	return nil
 }
 
 func (cfg *Config) applyDefaults() {
@@ -133,33 +114,6 @@ func (cfg *Config) applyDefaults() {
 	applyToNil(&cfg.EventsConfig.HostEventConfig.NewUnexpected, false)
 	applyToNil(&cfg.EventsConfig.HostEventConfig.NewIpForMac, false)
 	applyToNil(&cfg.EventsConfig.HostEventConfig.NewMacForIp, false)
-}
-
-func applyToNil[T any](ptr **T, value T) {
-	if *ptr == nil {
-		*ptr = &value
-	}
-}
-
-func toAbsPath(path *string) (string, error) {
-	pwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	var step string
-	// when running unit tests for this package
-	if strings.HasSuffix(pwd, "/config") {
-		step = ".."
-	}
-
-	var suffix string
-	if path != nil {
-		suffix = *path
-	}
-
-	absPath := filepath.Join(pwd, step, suffix)
-	return absPath, nil
 }
 
 func (cfg *Config) validate() error {
@@ -194,4 +148,54 @@ func (cfg *Config) validate() error {
 	}
 
 	return nil
+}
+
+func applyIfNotNilOrEmpty(ptr **string, value *string) {
+	if value != nil && *value != "" {
+		*ptr = value
+	}
+}
+
+func applyIfNotNil[T any](ptr **T, value *T) {
+	if value != nil {
+		*ptr = value
+	}
+}
+
+func resolveIfNotNil(ptr **string) error {
+	if *ptr != nil {
+		absPath, err := toAbsPath(*ptr)
+		if err != nil {
+			return err
+		}
+		*ptr = &absPath
+	}
+	return nil
+}
+
+func toAbsPath(path *string) (string, error) {
+	pwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	var step string
+	// when running unit tests for this package
+	if strings.HasSuffix(pwd, "/config") {
+		step = ".."
+	}
+
+	var suffix string
+	if path != nil {
+		suffix = *path
+	}
+
+	absPath := filepath.Join(pwd, step, suffix)
+	return absPath, nil
+}
+
+func applyToNil[T any](ptr **T, value T) {
+	if *ptr == nil {
+		*ptr = &value
+	}
 }
